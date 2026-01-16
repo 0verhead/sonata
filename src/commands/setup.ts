@@ -7,7 +7,7 @@ import {
   defaultConfig,
 } from "../lib/config.js";
 import { checkOpenCodeInstalled } from "../lib/opencode.js";
-import { checkGhInstalled, isGitRepo } from "../lib/git.js";
+import { checkGhInstalled, checkGhAuthenticated, isGitRepo } from "../lib/git.js";
 import {
   configureNotionMcp,
   isNotionMcpConfigured,
@@ -32,6 +32,9 @@ export async function setupCommand(): Promise<void> {
     isGitRepo(),
   ]);
 
+  // Check gh auth only if gh is installed
+  const ghAuthenticated = hasGh ? await checkGhAuthenticated() : false;
+
   s.stop("Prerequisites checked");
 
   // Show status
@@ -46,6 +49,13 @@ export async function setupCommand(): Promise<void> {
       hasGh ? "installed" : "not found"
     }`
   );
+  if (hasGh) {
+    console.log(
+      `  ${ghAuthenticated ? chalk.green("✓") : chalk.red("✗")} GitHub CLI ${
+        ghAuthenticated ? "authenticated" : "not authenticated"
+      }`
+    );
+  }
   console.log(
     `  ${inGitRepo ? chalk.green("✓") : chalk.yellow("!")} ${
       inGitRepo ? "In a git repository" : "Not in a git repository"
@@ -64,6 +74,15 @@ export async function setupCommand(): Promise<void> {
     p.note(
       "Install GitHub CLI from https://cli.github.com\nRequired for creating PRs",
       "Missing: gh"
+    );
+  } else if (!ghAuthenticated) {
+    p.note(
+      `To authenticate with GitHub, run:
+
+  gh auth login
+
+This is a one-time setup to connect GitHub CLI to your account.`,
+      "GitHub Authentication"
     );
   }
 

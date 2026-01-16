@@ -143,6 +143,18 @@ export async function checkGhInstalled(): Promise<boolean> {
 }
 
 /**
+ * Check if gh CLI is authenticated with GitHub
+ */
+export async function checkGhAuthenticated(): Promise<boolean> {
+  try {
+    await execa("gh", ["auth", "status"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Generate a branch name from a task title
  */
 export function generateBranchName(taskTitle: string, taskId: string): string {
