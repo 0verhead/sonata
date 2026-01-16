@@ -26,6 +26,10 @@ import {
   isNonEmptyString,
   isCancelled,
 } from "../types/index.js";
+import {
+  isNotionMcpConfigured,
+  configureNotionMcp,
+} from "../lib/opencode-config.js";
 
 const DEFAULT_TASK_FILE = "TASKS.md";
 
@@ -82,8 +86,15 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     process.exit(1);
   }
 
-  // Determine task source: Notion or file
+  // Auto-configure opencode.json if Notion is set up globally but not in this project
   const hasNotionConfig = Boolean(config.notion.boardId);
+  if (hasNotionConfig && !isNotionMcpConfigured(cwd)) {
+    s.start("Configuring opencode.json for this project...");
+    configureNotionMcp(cwd);
+    s.stop("Created opencode.json with Notion MCP");
+  }
+
+  // Determine task source: Notion or file
   const taskFilePath = path.join(cwd, taskFile);
   const hasTaskFile = fs.existsSync(taskFilePath);
 
@@ -160,35 +171,15 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   if (inGitRepo) {
     currentBranch = await getCurrentBranch(cwd);
     if (currentBranch === config.git.baseBranch && config.git.createBranch) {
-      const createNew = await p.confirm({
-        message: `You're on ${config.git.baseBranch}. Create a new task branch?`,
-        initialValue: true,
-      });
+      // Auto-generate branch name based on timestamp
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const shortId = Math.random().toString(36).substring(2, 8);
+      const branchName = `task/${timestamp}-${shortId}`;
 
-      if (isCancelled(createNew)) {
-        p.cancel("Cancelled");
-        process.exit(0);
-      }
-
-      if (createNew === true) {
-        const branchName = await p.text({
-          message: "Branch name:",
-          placeholder: "task/my-feature",
-          validate: (v) => (!v ? "Branch name required" : undefined),
-        });
-
-        if (isCancelled(branchName)) {
-          p.cancel("Cancelled");
-          process.exit(0);
-        }
-
-        if (isNonEmptyString(branchName)) {
-          s.start(`Creating branch ${branchName}...`);
-          await createBranch(branchName, config.git.baseBranch, cwd);
-          s.stop(`Switched to branch ${branchName}`);
-          currentBranch = branchName;
-        }
-      }
+      s.start(`Creating branch ${branchName}...`);
+      await createBranch(branchName, config.git.baseBranch, cwd);
+      s.stop(`Switched to branch ${branchName}`);
+      currentBranch = branchName;
     }
   }
 
@@ -228,6 +219,9 @@ The loop will run autonomously until:
     progressFile,
   });
 
+  // NOTE: Server mode disabled - --attach breaks --format json output
+  // TODO: Implement HTTP API interaction for proper server mode
+
   // The Ralph Loop
   console.log();
   p.log.step(chalk.bold("Starting Ralph loop..."));
@@ -256,7 +250,7 @@ The loop will run autonomously until:
     }
 
     // Run opencode
-    const result = await runOpenCode(prompt, { cwd, stream: true });
+    const result = await runOpenCode(prompt, { cwd });
 
     console.log();
 

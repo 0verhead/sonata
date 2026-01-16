@@ -9,6 +9,10 @@ import {
 import { checkOpenCodeInstalled } from "../lib/opencode.js";
 import { checkGhInstalled, isGitRepo } from "../lib/git.js";
 import {
+  configureNotionMcp,
+  isNotionMcpConfigured,
+} from "../lib/opencode-config.js";
+import {
   type Config,
   isNonEmptyString,
   isBoolean,
@@ -253,24 +257,37 @@ Max Iterations: ${config.loop.maxIterations}`,
     "Configuration saved"
   );
 
-  // Notion MCP setup instructions
+  // Configure Notion MCP in opencode.json
   if (useNotion === true) {
-    p.note(
-      `To connect Notion, add this to your opencode.json:
+    const alreadyConfigured = isNotionMcpConfigured();
 
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "notion": {
-      "type": "remote",
-      "url": "https://mcp.notion.com/mcp",
-      "enabled": true
+    if (alreadyConfigured) {
+      p.log.info("Notion MCP already configured in opencode.json");
+    } else {
+      const setupMcp = await p.confirm({
+        message: "Configure Notion MCP in opencode.json?",
+        initialValue: true,
+      });
+
+      if (!isCancelled(setupMcp) && setupMcp === true) {
+        s.start("Configuring opencode.json...");
+        const result = configureNotionMcp();
+        s.stop(
+          result.created
+            ? `Created ${result.path}`
+            : `Updated ${result.path}`
+        );
+      }
     }
-  }
-}
 
-Then run: opencode mcp auth notion`,
-      "Notion MCP Setup"
+    // Remind about authentication
+    p.note(
+      `To authenticate with Notion, run:
+
+  opencode mcp auth notion
+
+This will open a browser to connect your Notion workspace.`,
+      "Notion Authentication"
     );
   }
 

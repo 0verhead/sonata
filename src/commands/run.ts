@@ -21,11 +21,18 @@ import {
   getCurrentBranch,
   createBranch,
   createPR,
+  getCommitsSinceBase,
+  generatePRTitle,
+  generatePRBody,
 } from "../lib/git.js";
 import {
   isNonEmptyString,
   isCancelled,
 } from "../types/index.js";
+import {
+  isNotionMcpConfigured,
+  configureNotionMcp,
+} from "../lib/opencode-config.js";
 
 const DEFAULT_TASK_FILE = "TASKS.md";
 
@@ -33,6 +40,7 @@ interface RunOptions {
   taskFile?: string;
   cwd?: string;
   useNotion?: boolean; // Override to force Notion or file
+  yes?: boolean; // Auto-confirm prompts
 }
 
 /**
@@ -40,7 +48,7 @@ interface RunOptions {
  * This is the core of the Ralph loop - one pass through the prompt
  */
 export async function runCommand(options: RunOptions = {}): Promise<void> {
-  const { taskFile = DEFAULT_TASK_FILE, cwd = process.cwd() } = options;
+  const { taskFile = DEFAULT_TASK_FILE, cwd = process.cwd(), yes = false } = options;
 
   p.intro(chalk.bgBlue.white(" notion-code run (HITL) "));
 
@@ -64,13 +72,31 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   }
 
   // Determine task source: Notion or file
-  const hasNotionConfig = Boolean(config.notion.boardId);
   const taskFilePath = path.join(cwd, taskFile);
   const hasTaskFile = fs.existsSync(taskFilePath);
 
+  // If --file flag is set, force file-based task source
+  const forceFile = options.useNotion === false;
+
+  // Auto-configure opencode.json if Notion is set up globally but not in this project
+  // (skip if --file flag is set)
+  const hasNotionConfig = Boolean(config.notion.boardId);
+  if (hasNotionConfig && !isNotionMcpConfigured(cwd) && !forceFile) {
+    s.start("Configuring opencode.json for this project...");
+    configureNotionMcp(cwd);
+    s.stop("Created opencode.json with Notion MCP");
+  }
+
   let taskSource: TaskSource;
 
-  if (hasNotionConfig && !hasTaskFile) {
+  if (forceFile && hasTaskFile) {
+    // Force file mode via --file flag
+    taskSource = {
+      type: "file",
+      taskFile,
+    };
+    p.log.info(`Using local file: ${taskFile}`);
+  } else if (hasNotionConfig && !hasTaskFile) {
     // Notion configured, no local file - use Notion
     taskSource = {
       type: "notion",
@@ -78,38 +104,46 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
       notionStatusColumn: config.notion.statusColumn,
     };
     p.log.info(`Using Notion board: ${config.notion.boardName ?? config.notion.boardId}`);
-  } else if (hasNotionConfig && hasTaskFile) {
-    // Both available - ask user
-    const source = await p.select({
-      message: "Task source:",
-      options: [
-        {
-          value: "notion",
-          label: `Notion board (${config.notion.boardName ?? config.notion.boardId})`,
-        },
-        {
-          value: "file",
-          label: `Local file (${taskFile})`,
-        },
-      ],
-    });
-
-    if (isCancelled(source)) {
-      p.cancel("Cancelled");
-      process.exit(0);
-    }
-
-    if (source === "notion") {
-      taskSource = {
-        type: "notion",
-        notionBoardId: config.notion.boardId,
-        notionStatusColumn: config.notion.statusColumn,
-      };
-    } else {
+  } else if (hasNotionConfig && hasTaskFile && !forceFile) {
+    // Both available - ask user (unless --yes flag, then default to file)
+    if (yes) {
       taskSource = {
         type: "file",
         taskFile,
       };
+      p.log.info(`Using local file: ${taskFile} (auto-selected)`);
+    } else {
+      const source = await p.select({
+        message: "Task source:",
+        options: [
+          {
+            value: "notion",
+            label: `Notion board (${config.notion.boardName ?? config.notion.boardId})`,
+          },
+          {
+            value: "file",
+            label: `Local file (${taskFile})`,
+          },
+        ],
+      });
+
+      if (isCancelled(source)) {
+        p.cancel("Cancelled");
+        process.exit(0);
+      }
+
+      if (source === "notion") {
+        taskSource = {
+          type: "notion",
+          notionBoardId: config.notion.boardId,
+          notionStatusColumn: config.notion.statusColumn,
+        };
+      } else {
+        taskSource = {
+          type: "file",
+          taskFile,
+        };
+      }
     }
   } else if (hasTaskFile) {
     // Only file available
@@ -179,34 +213,14 @@ Add any notes or context for the AI here.
     const currentBranch = await getCurrentBranch(cwd);
 
     if (currentBranch === config.git.baseBranch) {
-      const createNew = await p.confirm({
-        message: `You're on ${config.git.baseBranch}. Create a new task branch?`,
-        initialValue: true,
-      });
+      // Auto-generate branch name based on timestamp
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const shortId = Math.random().toString(36).substring(2, 8);
+      const branchName = `task/${timestamp}-${shortId}`;
 
-      if (isCancelled(createNew)) {
-        p.cancel("Setup cancelled");
-        process.exit(0);
-      }
-
-      if (createNew === true) {
-        const branchName = await p.text({
-          message: "Branch name:",
-          placeholder: "task/my-feature",
-          validate: (v) => (!v ? "Branch name required" : undefined),
-        });
-
-        if (isCancelled(branchName)) {
-          p.cancel("Setup cancelled");
-          process.exit(0);
-        }
-
-        if (isNonEmptyString(branchName)) {
-          s.start(`Creating branch ${branchName}...`);
-          await createBranch(branchName, config.git.baseBranch, cwd);
-          s.stop(`Switched to branch ${branchName}`);
-        }
-      }
+      s.start(`Creating branch ${branchName}...`);
+      await createBranch(branchName, config.git.baseBranch, cwd);
+      s.stop(`Switched to branch ${branchName}`);
     } else {
       p.log.info(`Working on branch: ${currentBranch}`);
     }
@@ -229,16 +243,21 @@ Iteration: ${iteration}`,
     "Running opencode"
   );
 
-  // Confirm before running
-  const proceed = await p.confirm({
-    message: "Ready to run opencode?",
-    initialValue: true,
-  });
+  // Confirm before running (skip if --yes flag)
+  if (!yes) {
+    const proceed = await p.confirm({
+      message: "Ready to run opencode?",
+      initialValue: true,
+    });
 
-  if (isCancelled(proceed) || proceed !== true) {
-    p.cancel("Cancelled");
-    process.exit(0);
+    if (isCancelled(proceed) || proceed !== true) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
   }
+
+  // NOTE: Server mode disabled - --attach breaks --format json output
+  // TODO: Implement HTTP API interaction for proper server mode
 
   // Run opencode
   console.log();
@@ -247,7 +266,7 @@ Iteration: ${iteration}`,
   console.log(chalk.dim("─".repeat(60)));
   console.log();
 
-  const result = await runOpenCode(prompt, { cwd, stream: true });
+  const result = await runOpenCode(prompt, { cwd });
 
   console.log();
   console.log(chalk.dim("─".repeat(60)));
@@ -268,41 +287,39 @@ Iteration: ${iteration}`,
     if (inGitRepo && config.git.createPR) {
       const currentBranch = await getCurrentBranch(cwd);
       if (currentBranch !== config.git.baseBranch) {
-        const shouldCreatePR = await p.confirm({
-          message: "Create a pull request?",
-          initialValue: true,
-        });
+        // Auto-generate PR title/body from commits
+        const commits = await getCommitsSinceBase(config.git.baseBranch, cwd);
+        const prTitle = generatePRTitle(commits);
+        const prBody = generatePRBody(commits);
 
-        if (isCancelled(shouldCreatePR)) {
-          p.cancel("Cancelled");
-          process.exit(0);
-        }
+        let shouldCreatePR: boolean | symbol = true;
 
-        if (shouldCreatePR === true) {
-          const prTitle = await p.text({
-            message: "PR title:",
-            initialValue: currentBranch.replace("task/", "").replace(/-/g, " "),
+        if (!yes) {
+          // Only ask if user wants to create PR, not for the title
+          shouldCreatePR = await p.confirm({
+            message: `Create PR: "${prTitle}"?`,
+            initialValue: true,
           });
 
-          if (isCancelled(prTitle)) {
+          if (isCancelled(shouldCreatePR)) {
             p.cancel("Cancelled");
             process.exit(0);
           }
+        }
 
-          if (isNonEmptyString(prTitle)) {
-            s.start("Creating pull request...");
-            try {
-              const prUrl = await createPR(
-                prTitle,
-                `Completed via notion-code\n\nSee progress.txt for details.`,
-                config.git.baseBranch,
-                cwd
-              );
-              s.stop(`PR created: ${prUrl}`);
-            } catch (error) {
-              s.stop("Failed to create PR");
-              p.log.error(String(error));
-            }
+        if (shouldCreatePR === true) {
+          s.start(`Creating PR: "${prTitle}"...`);
+          try {
+            const prUrl = await createPR(
+              prTitle,
+              prBody,
+              config.git.baseBranch,
+              cwd
+            );
+            s.stop(`PR created: ${prUrl}`);
+          } catch (error) {
+            s.stop("Failed to create PR");
+            p.log.error(String(error));
           }
         }
       }

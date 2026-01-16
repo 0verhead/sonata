@@ -169,3 +169,65 @@ export async function getRemoteUrl(
     return null;
   }
 }
+
+/**
+ * Get commit messages since diverging from base branch
+ */
+export async function getCommitsSinceBase(
+  baseBranch: string = "main",
+  cwd: string = process.cwd()
+): Promise<string[]> {
+  try {
+    const result = await execa(
+      "git",
+      ["log", `${baseBranch}..HEAD`, "--pretty=format:%s"],
+      { cwd }
+    );
+    return result.stdout.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Generate PR title from commit messages
+ * Uses first commit message or summarizes multiple commits
+ */
+export function generatePRTitle(commits: string[]): string {
+  if (commits.length === 0) {
+    return "Changes from notion-code";
+  }
+  
+  if (commits.length === 1) {
+    return commits[0];
+  }
+  
+  // Multiple commits - use the first one (usually the most descriptive)
+  // or find a common theme
+  const firstCommit = commits[commits.length - 1]; // Oldest commit (usually the feature name)
+  return firstCommit;
+}
+
+/**
+ * Generate PR body from commits and progress
+ */
+export function generatePRBody(commits: string[]): string {
+  const lines = [
+    "## Summary",
+    "",
+    "Completed via notion-code",
+    "",
+  ];
+  
+  if (commits.length > 0) {
+    lines.push("## Commits", "");
+    for (const commit of commits) {
+      lines.push(`- ${commit}`);
+    }
+    lines.push("");
+  }
+  
+  lines.push("See `progress.txt` for detailed work log.");
+  
+  return lines.join("\n");
+}

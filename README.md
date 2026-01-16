@@ -24,6 +24,8 @@ Read more about Ralph:
 
 ## Installation
 
+### From npm (when published)
+
 ```bash
 npm install -g notion-code
 ```
@@ -34,6 +36,31 @@ Or run directly:
 npx notion-code
 ```
 
+### From source
+
+```bash
+# Clone the repository
+git clone https://github.com/0verhead/notion-code.git
+cd notion-code
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link globally so you can use `notion-code` anywhere
+npm link
+```
+
+After linking, you can use `notion-code` from any directory.
+
+To unlink later:
+
+```bash
+npm unlink -g notion-code
+```
+
 ### Prerequisites
 
 - [OpenCode](https://opencode.ai) CLI installed
@@ -42,18 +69,34 @@ npx notion-code
 
 ## Quick Start
 
+### With Notion (recommended)
+
 ```bash
-# 1. Setup (configure Notion, git settings)
+# One-time global setup
+notion-code setup          # Configure Notion board, git settings
+opencode mcp auth notion   # Authenticate with Notion
+
+# Then for any project, just:
+cd ~/projects/my-project
+notion-code run            # Auto-configures opencode.json, uses Notion for tasks
+```
+
+### With local TASKS.md
+
+```bash
+# One-time setup (skip Notion)
 notion-code setup
 
-# 2. Create your task file
-# Edit TASKS.md with your tasks
+# Per project
+cd ~/projects/my-project
+notion-code run            # Creates TASKS.md template, you edit it
+notion-code run            # Runs with your tasks
+```
 
-# 3. Run single iteration (HITL mode)
-notion-code run
+### AFK Mode
 
-# 4. Or run autonomously (AFK mode)
-notion-code loop 10
+```bash
+notion-code loop 10        # Run up to 10 iterations autonomously
 ```
 
 ## Commands
@@ -165,34 +208,42 @@ When configured, notion-code will:
 
 ## Notion Integration
 
-### Setup
+Use a Notion kanban board as your task source instead of a local `TASKS.md` file.
 
-1. Add the Notion MCP server to your `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "notion": {
-      "type": "remote",
-      "url": "https://mcp.notion.com/mcp",
-      "enabled": true
-    }
-  }
-}
-```
-
-2. Authenticate:
+### One-time Setup
 
 ```bash
+# 1. Configure notion-code with your Notion board
+notion-code setup
+# - Select "Yes" to connect Notion
+# - Enter your database ID (from the Notion board URL)
+# - Configure status column names to match your board
+
+# 2. Authenticate with Notion (only needed once)
 opencode mcp auth notion
 ```
 
-3. Run setup to configure your board:
+### Per-project Usage
 
 ```bash
-notion-code setup
+cd ~/projects/any-project
+notion-code run
 ```
+
+The tool automatically:
+1. Creates `opencode.json` with Notion MCP config (if missing)
+2. Fetches tasks from your Notion board
+3. Updates task status as work progresses (To Do → In Progress → Done)
+4. Tracks progress locally in `progress.txt`
+5. Creates branches and PRs per task (if configured)
+
+### Task Source Priority
+
+| Scenario | What happens |
+|----------|--------------|
+| Notion configured, no `TASKS.md` | Uses Notion board |
+| Only `TASKS.md` exists | Uses local file |
+| Both available | Prompts you to choose |
 
 ## Options
 

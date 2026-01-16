@@ -21,6 +21,11 @@ import {
 } from "../lib/git.js";
 import { checkOpenCodeInstalled } from "../lib/opencode.js";
 import { checkGhInstalled } from "../lib/git.js";
+import {
+  isNotionMcpConfigured,
+  openCodeConfigExists,
+  getOpenCodeConfigPath,
+} from "../lib/opencode-config.js";
 
 const DEFAULT_TASK_FILE = "TASKS.md";
 
@@ -119,6 +124,29 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     console.log(`    Remote: ${remote || "None"}`);
   } else {
     console.log(`  ${chalk.yellow("!")} Not a git repository`);
+  }
+
+  // OpenCode config status
+  console.log();
+  console.log(chalk.bold("OpenCode Config:"));
+  if (openCodeConfigExists(cwd)) {
+    const hasNotionMcp = isNotionMcpConfigured(cwd);
+    console.log(`  ${chalk.green("✓")} ${getOpenCodeConfigPath(cwd)}`);
+    console.log(
+      `    Notion MCP: ${hasNotionMcp ? chalk.green("Configured") : chalk.yellow("Not configured")}`
+    );
+    if (hasNotionConfig && !hasNotionMcp) {
+      console.log(
+        chalk.yellow(`    Run \`notion-code setup\` to configure Notion MCP`)
+      );
+    }
+  } else {
+    console.log(`  ${chalk.dim("-")} opencode.json not found`);
+    if (hasNotionConfig) {
+      console.log(
+        chalk.yellow(`    Run \`notion-code setup\` to create it`)
+      );
+    }
   }
 
   // Prerequisites

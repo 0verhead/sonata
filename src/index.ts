@@ -27,10 +27,14 @@ program
   .description("Run a single iteration (HITL mode)")
   .option("-t, --task-file <file>", "Task file path", "TASKS.md")
   .option("-d, --dir <directory>", "Working directory", process.cwd())
+  .option("-y, --yes", "Auto-confirm prompts", false)
+  .option("--file", "Force file-based task source (skip Notion)", false)
   .action(async (options) => {
     await runCommand({
       taskFile: options.taskFile,
       cwd: options.dir,
+      yes: options.yes,
+      useNotion: options.file ? false : undefined,
     });
   });
 

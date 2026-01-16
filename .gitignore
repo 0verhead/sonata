@@ -26,5 +26,4 @@ coverage/
 .env.local
 
 # Progress file (generated during runs)
-# Uncomment if you don't want to commit progress
-# progress.txt
+progress.txt
