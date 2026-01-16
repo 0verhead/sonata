@@ -8,6 +8,7 @@ import {
   buildPrompt,
   checkOpenCodeInstalled,
   killActiveProcess,
+  type TaskSource,
 } from "../lib/opencode.js";
 import {
   progressExists,
@@ -23,7 +24,6 @@ import {
 } from "../lib/git.js";
 import {
   isNonEmptyString,
-  isBoolean,
   isCancelled,
 } from "../types/index.js";
 
@@ -82,19 +82,76 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     process.exit(1);
   }
 
-  // Check for task file
+  // Determine task source: Notion or file
+  const hasNotionConfig = Boolean(config.notion.boardId);
   const taskFilePath = path.join(cwd, taskFile);
-  if (!fs.existsSync(taskFilePath)) {
+  const hasTaskFile = fs.existsSync(taskFilePath);
+
+  let taskSource: TaskSource;
+
+  if (hasNotionConfig && !hasTaskFile) {
+    // Notion configured, no local file - use Notion
+    taskSource = {
+      type: "notion",
+      notionBoardId: config.notion.boardId,
+      notionStatusColumn: config.notion.statusColumn,
+    };
+    p.log.info(`Using Notion board: ${config.notion.boardName ?? config.notion.boardId}`);
+  } else if (hasNotionConfig && hasTaskFile) {
+    // Both available - ask user
+    const source = await p.select({
+      message: "Task source:",
+      options: [
+        {
+          value: "notion",
+          label: `Notion board (${config.notion.boardName ?? config.notion.boardId})`,
+        },
+        {
+          value: "file",
+          label: `Local file (${taskFile})`,
+        },
+      ],
+    });
+
+    if (isCancelled(source)) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+
+    if (source === "notion") {
+      taskSource = {
+        type: "notion",
+        notionBoardId: config.notion.boardId,
+        notionStatusColumn: config.notion.statusColumn,
+      };
+    } else {
+      taskSource = {
+        type: "file",
+        taskFile,
+      };
+    }
+  } else if (hasTaskFile) {
+    // Only file available
+    taskSource = {
+      type: "file",
+      taskFile,
+    };
+  } else {
+    // No task source
     p.cancel(
-      `Task file "${taskFile}" not found. Run setup or create it first.`
+      `No task source found. Either create ${taskFile} or run \`notion-code setup\` to configure Notion.`
     );
     process.exit(1);
   }
 
   // Initialize progress if needed
   const startIteration = getCurrentIteration(cwd);
+  const taskSourceLabel = taskSource.type === "notion"
+    ? `Notion: ${config.notion.boardName ?? config.notion.boardId}`
+    : taskFile;
+
   if (!progressExists(cwd)) {
-    initProgress(cwd, taskFile);
+    initProgress(cwd, taskSourceLabel);
     p.log.info("Initialized progress.txt");
   }
 
@@ -137,8 +194,12 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
 
   // Confirm before starting AFK mode
   if (!hitl) {
+    const taskSourceDisplay = taskSource.type === "notion"
+      ? `Notion board: ${config.notion.boardName ?? config.notion.boardId}`
+      : `Task file: ${taskFile}`;
+
     p.note(
-      `Task file: ${taskFile}
+      `${taskSourceDisplay}
 Max iterations: ${iterations}
 Branch: ${currentBranch || "N/A"}
 
@@ -163,7 +224,7 @@ The loop will run autonomously until:
   // Build base prompt
   const progressFile = "progress.txt";
   const prompt = buildPrompt({
-    taskFile,
+    taskSource,
     progressFile,
   });
 

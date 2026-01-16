@@ -51,21 +51,32 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     console.log(`  ${chalk.yellow("!")} No config found. Run \`notion-code setup\``);
   }
 
-  // Task file status
+  // Task source status
   console.log();
-  console.log(chalk.bold("Task File:"));
+  console.log(chalk.bold("Task Source:"));
   const taskFilePath = path.join(cwd, taskFile);
-  if (fs.existsSync(taskFilePath)) {
+  const hasTaskFile = fs.existsSync(taskFilePath);
+  const hasNotionConfig = configExists() && Boolean(loadConfig().notion.boardId);
+
+  if (hasNotionConfig) {
+    const config = loadConfig();
+    console.log(`  ${chalk.green("✓")} Notion board: ${config.notion.boardName ?? config.notion.boardId}`);
+    console.log(`    Status columns: ${config.notion.statusColumn.todo} → ${config.notion.statusColumn.inProgress} → ${config.notion.statusColumn.done}`);
+  }
+
+  if (hasTaskFile) {
     const content = fs.readFileSync(taskFilePath, "utf-8");
     const lines = content.split("\n").length;
     const todoMatches = content.match(/- \[ \]/g);
     const doneMatches = content.match(/- \[x\]/gi);
-    console.log(`  ${chalk.green("✓")} ${taskFile} (${lines} lines)`);
-    console.log(`    Pending: ${todoMatches?.length || 0} tasks`);
-    console.log(`    Done: ${doneMatches?.length || 0} tasks`);
-  } else {
-    console.log(`  ${chalk.red("✗")} ${taskFile} not found`);
-    console.log(`    Run \`notion-code run\` to create one`);
+    console.log(`  ${chalk.green("✓")} Local file: ${taskFile} (${lines} lines)`);
+    console.log(`    Pending: ${todoMatches?.length ?? 0} tasks`);
+    console.log(`    Done: ${doneMatches?.length ?? 0} tasks`);
+  }
+
+  if (!hasNotionConfig && !hasTaskFile) {
+    console.log(`  ${chalk.yellow("!")} No task source configured`);
+    console.log(`    Run \`notion-code setup\` for Notion, or \`notion-code run\` to create ${taskFile}`);
   }
 
   // Progress status

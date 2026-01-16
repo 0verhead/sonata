@@ -186,30 +186,57 @@ export async function checkOpenCodeInstalled(): Promise<boolean> {
 }
 
 /**
+ * Task source configuration
+ */
+export interface TaskSource {
+  type: "file" | "notion";
+  // For file source
+  taskFile?: string;
+  // For Notion source
+  notionBoardId?: string;
+  notionStatusColumn?: {
+    todo: string;
+    inProgress: string;
+    done: string;
+  };
+}
+
+/**
  * Build the Ralph-style prompt for opencode
  * This combines the task info, progress context, and loop instructions
  */
 export function buildPrompt(options: {
-  taskFile?: string; // Path to PRD/task file (e.g., TASKS.md)
-  progressFile?: string; // Path to progress.txt
+  taskSource: TaskSource;
+  progressFile?: string;
   customInstructions?: string;
 }): string {
-  const { taskFile, progressFile, customInstructions } = options;
+  const { taskSource, progressFile, customInstructions } = options;
 
   const parts: string[] = [];
-
-  // Include task file reference
-  if (taskFile) {
-    parts.push(`@${taskFile}`);
-  }
 
   // Include progress file reference
   if (progressFile) {
     parts.push(`@${progressFile}`);
   }
 
+  // Task source instructions
+  if (taskSource.type === "notion" && taskSource.notionBoardId) {
+    const statusCol = taskSource.notionStatusColumn;
+    parts.push(`
+TASK SOURCE: Notion Board
+Use the Notion MCP tools to:
+1. Fetch tasks from the Notion database with ID: ${taskSource.notionBoardId}
+2. Look for tasks in the "${statusCol?.todo ?? "To Do"}" column
+3. When you start a task, update its status to "${statusCol?.inProgress ?? "In Progress"}"
+4. When you complete a task, update its status to "${statusCol?.done ?? "Done"}"
+`);
+  } else if (taskSource.taskFile) {
+    parts.push(`@${taskSource.taskFile}`);
+  }
+
   // Core Ralph loop instructions
   parts.push(`
+INSTRUCTIONS:
 1. Decide which task to work on next.
    This should be the one YOU decide has the highest priority,
    - not necessarily the first in the list.
@@ -228,5 +255,5 @@ is complete, output ${COMPLETE_SIGNAL}.
     parts.push(customInstructions);
   }
 
-  return parts.join(" ");
+  return parts.join("\n");
 }

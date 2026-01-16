@@ -8,6 +8,7 @@ import {
   buildPrompt,
   checkOpenCodeInstalled,
   killActiveProcess,
+  type TaskSource,
 } from "../lib/opencode.js";
 import {
   progressExists,
@@ -23,7 +24,6 @@ import {
 } from "../lib/git.js";
 import {
   isNonEmptyString,
-  isBoolean,
   isCancelled,
 } from "../types/index.js";
 
@@ -32,6 +32,7 @@ const DEFAULT_TASK_FILE = "TASKS.md";
 interface RunOptions {
   taskFile?: string;
   cwd?: string;
+  useNotion?: boolean; // Override to force Notion or file
 }
 
 /**
@@ -62,20 +63,83 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     process.exit(1);
   }
 
-  // Check for task file
+  // Determine task source: Notion or file
+  const hasNotionConfig = Boolean(config.notion.boardId);
   const taskFilePath = path.join(cwd, taskFile);
-  if (!fs.existsSync(taskFilePath)) {
-    const createFile = await p.confirm({
-      message: `Task file "${taskFile}" not found. Create it?`,
+  const hasTaskFile = fs.existsSync(taskFilePath);
+
+  let taskSource: TaskSource;
+
+  if (hasNotionConfig && !hasTaskFile) {
+    // Notion configured, no local file - use Notion
+    taskSource = {
+      type: "notion",
+      notionBoardId: config.notion.boardId,
+      notionStatusColumn: config.notion.statusColumn,
+    };
+    p.log.info(`Using Notion board: ${config.notion.boardName ?? config.notion.boardId}`);
+  } else if (hasNotionConfig && hasTaskFile) {
+    // Both available - ask user
+    const source = await p.select({
+      message: "Task source:",
+      options: [
+        {
+          value: "notion",
+          label: `Notion board (${config.notion.boardName ?? config.notion.boardId})`,
+        },
+        {
+          value: "file",
+          label: `Local file (${taskFile})`,
+        },
+      ],
     });
 
-    if (isCancelled(createFile)) {
-      p.cancel("Setup cancelled");
+    if (isCancelled(source)) {
+      p.cancel("Cancelled");
       process.exit(0);
     }
 
-    if (createFile === true) {
-      const template = `# Tasks
+    if (source === "notion") {
+      taskSource = {
+        type: "notion",
+        notionBoardId: config.notion.boardId,
+        notionStatusColumn: config.notion.statusColumn,
+      };
+    } else {
+      taskSource = {
+        type: "file",
+        taskFile,
+      };
+    }
+  } else if (hasTaskFile) {
+    // Only file available
+    taskSource = {
+      type: "file",
+      taskFile,
+    };
+  } else {
+    // No task source - offer to create file or setup Notion
+    const choice = await p.select({
+      message: "No task source found. What would you like to do?",
+      options: [
+        { value: "create", label: `Create ${taskFile}` },
+        { value: "setup", label: "Run setup to configure Notion" },
+        { value: "cancel", label: "Cancel" },
+      ],
+    });
+
+    if (isCancelled(choice) || choice === "cancel") {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+
+    if (choice === "setup") {
+      p.note("Run `notion-code setup` to configure Notion", "Next Steps");
+      process.exit(0);
+    }
+
+    // Create task file
+    const template = `# Tasks
 
 ## To Do
 
@@ -92,25 +156,21 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
 
 Add any notes or context for the AI here.
 `;
-      fs.writeFileSync(taskFilePath, template, "utf-8");
-      p.log.success(`Created ${taskFile}`);
-      p.note(
-        `Edit ${taskFile} with your tasks, then run again.`,
-        "Next Steps"
-      );
-      p.outro("Setup task file first");
-      return;
-    } else {
-      p.cancel("Task file required to continue.");
-      process.exit(1);
-    }
+    fs.writeFileSync(taskFilePath, template, "utf-8");
+    p.log.success(`Created ${taskFile}`);
+    p.note(`Edit ${taskFile} with your tasks, then run again.`, "Next Steps");
+    p.outro("Setup task file first");
+    return;
   }
 
   // Initialize or continue progress
   const iteration = getCurrentIteration(cwd) + 1;
+  const taskSourceLabel = taskSource.type === "notion"
+    ? `Notion: ${config.notion.boardName ?? config.notion.boardId}`
+    : taskFile;
 
   if (!progressExists(cwd)) {
-    initProgress(cwd, taskFile);
+    initProgress(cwd, taskSourceLabel);
     p.log.info("Initialized progress.txt");
   }
 
@@ -119,7 +179,6 @@ Add any notes or context for the AI here.
     const currentBranch = await getCurrentBranch(cwd);
 
     if (currentBranch === config.git.baseBranch) {
-      // On base branch, might need to create task branch
       const createNew = await p.confirm({
         message: `You're on ${config.git.baseBranch}. Create a new task branch?`,
         initialValue: true,
@@ -158,13 +217,13 @@ Add any notes or context for the AI here.
 
   const progressFile = "progress.txt";
   const prompt = buildPrompt({
-    taskFile,
+    taskSource,
     progressFile,
   });
 
   // Show what we're about to do
   p.note(
-    `Task file: ${taskFile}
+    `Task source: ${taskSource.type === "notion" ? "Notion board" : taskFile}
 Progress file: ${progressFile}
 Iteration: ${iteration}`,
     "Running opencode"
@@ -197,6 +256,7 @@ Iteration: ${iteration}`,
   // Handle result
   if (!result.success) {
     p.log.error(`opencode failed: ${result.error}`);
+    killActiveProcess();
     process.exit(1);
   }
 
