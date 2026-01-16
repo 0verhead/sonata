@@ -228,25 +228,22 @@ export function generatePRTitle(commits: string[]): string {
 }
 
 /**
- * Generate PR body from commits and progress
+ * Generate PR body from commits and task title
  */
-export function generatePRBody(commits: string[]): string {
-  const lines = [
-    "## Summary",
-    "",
-    "Completed via notion-code",
-    "",
-  ];
+export function generatePRBody(commits: string[], taskTitle?: string): string {
+  const lines = ["## Summary", ""];
+  
+  if (taskTitle) {
+    lines.push(`**Task:** ${taskTitle}`, "");
+  }
   
   if (commits.length > 0) {
-    lines.push("## Commits", "");
+    lines.push("## Changes", "");
     for (const commit of commits) {
       lines.push(`- ${commit}`);
     }
     lines.push("");
   }
-  
-  lines.push("See `progress.txt` for detailed work log.");
   
   return lines.join("\n");
 }

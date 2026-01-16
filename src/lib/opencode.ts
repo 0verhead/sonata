@@ -11,6 +11,33 @@ const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes max session time
 const HEALTH_CHECK_TIMEOUT_MS = 30_000; // 30 seconds to wait for server
 
 /**
+ * Extract task title from opencode output
+ * Looks for patterns like:
+ * - Task: "Title here"
+ * - **Task:** Title here
+ * - Working on: Title here
+ */
+function extractTaskTitle(output: string): string | undefined {
+  // Try various patterns that opencode might use
+  const patterns = [
+    /- Task: [""]([^""]+)[""]/i,
+    /- Task: (.+?)(?:\n|$)/i,
+    /\*\*Task:\*\* (.+?)(?:\n|$)/i,
+    /Working on[: ]+[""]?([^""\n]+)[""]?/i,
+    /Task[: ]+[""]([^""]+)[""]/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = output.match(pattern);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * OpenCode instance with client and server
  */
 interface OpenCodeInstance {
@@ -282,10 +309,14 @@ export async function runOpenCode(
     activeInstance = null;
     console.log(`\n[opencode] Session complete`);
 
+    // Extract task title from output
+    const taskTitle = extractTaskTitle(output);
+
     return {
       success: true,
       output,
       isComplete: output.includes(COMPLETE_SIGNAL),
+      taskTitle,
     };
   } catch (err) {
     clearTimeout(timeoutId);
