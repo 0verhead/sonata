@@ -118,11 +118,11 @@ export async function createPR(
   // Push first
   await push(cwd, true);
 
-  // Create PR
+  // Create PR using --body-file - to read body from stdin (avoids shell escaping issues)
   const result = await execa(
     "gh",
-    ["pr", "create", "--title", title, "--body", body, "--base", baseBranch],
-    { cwd }
+    ["pr", "create", "--title", title, "--body-file", "-", "--base", baseBranch],
+    { cwd, input: body }
   );
 
   // Extract PR URL from output
@@ -203,7 +203,7 @@ export async function getCommitsSinceBase(
 
 /**
  * Generate PR title from commit messages
- * Uses first commit message or summarizes multiple commits
+ * Finds the most descriptive commit (conventional commit format preferred)
  */
 export function generatePRTitle(commits: string[]): string {
   if (commits.length === 0) {
@@ -214,26 +214,29 @@ export function generatePRTitle(commits: string[]): string {
     return commits[0];
   }
   
-  // Multiple commits - use the first one (usually the most descriptive)
-  // or find a common theme
-  const firstCommit = commits[commits.length - 1]; // Oldest commit (usually the feature name)
-  return firstCommit;
+  // Look for conventional commits (fix:, feat:, refactor:, etc.) - these are most descriptive
+  const conventionalCommit = commits.find(c => 
+    /^(fix|feat|refactor|chore|docs|style|test|perf|ci|build)(\(.+\))?:/.test(c)
+  );
+  
+  if (conventionalCommit) {
+    return conventionalCommit;
+  }
+  
+  // Otherwise use the most recent commit (first in array, most likely to describe the work)
+  return commits[0];
 }
 
 /**
  * Generate PR body from commits and progress
  */
-export function generatePRBody(commits: string[], taskTitle?: string): string {
+export function generatePRBody(commits: string[]): string {
   const lines = [
     "## Summary",
     "",
+    "Completed via notion-code",
+    "",
   ];
-
-  if (taskTitle) {
-    lines.push(`**Task:** ${taskTitle}`, "");
-  }
-
-  lines.push("Completed via notion-code", "");
   
   if (commits.length > 0) {
     lines.push("## Commits", "");
@@ -242,6 +245,8 @@ export function generatePRBody(commits: string[], taskTitle?: string): string {
     }
     lines.push("");
   }
+  
+  lines.push("See `progress.txt` for detailed work log.");
   
   return lines.join("\n");
 }

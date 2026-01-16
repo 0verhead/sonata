@@ -62,7 +62,6 @@ export const OpenCodeResultSchema = z.object({
   output: z.string(),
   isComplete: z.boolean(),
   error: z.string().optional(),
-  taskTitle: z.string().optional(),
 });
 
 export type OpenCodeResult = z.infer<typeof OpenCodeResultSchema>;

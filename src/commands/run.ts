@@ -287,12 +287,10 @@ Iteration: ${iteration}`,
     if (inGitRepo && config.git.createPR) {
       const currentBranch = await getCurrentBranch(cwd);
       if (currentBranch !== config.git.baseBranch) {
-        // Get commits for PR body
+        // Auto-generate PR title/body from commits
         const commits = await getCommitsSinceBase(config.git.baseBranch, cwd);
-        
-        // PR title priority: task title from Notion > first commit message > fallback
-        const prTitle = result.taskTitle ?? generatePRTitle(commits);
-        const prBody = generatePRBody(commits, result.taskTitle);
+        const prTitle = generatePRTitle(commits);
+        const prBody = generatePRBody(commits);
 
         let shouldCreatePR: boolean | symbol = true;
 
