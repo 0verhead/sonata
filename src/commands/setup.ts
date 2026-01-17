@@ -265,13 +265,63 @@ This is a one-time setup to connect GitHub CLI to your account.`,
     process.exit(0);
   }
 
+  // Mode configuration
+  p.log.step("Mode Configuration");
+
+  p.note(
+    "notion-code supports two modes:\n" +
+    "- local: Store specs in a local specs/ folder\n" +
+    "- notion: Use Notion kanban board for tasks\n\n" +
+    "You can also use --local or --notion flags to override.",
+    "Mode Selection"
+  );
+
+  const modeResult = await p.select({
+    message: "Default mode (or auto-detect):",
+    options: [
+      { value: "auto", label: "Auto-detect", hint: "Detect based on what's available" },
+      { value: "local", label: "Local", hint: "Use specs/ folder" },
+      { value: "notion", label: "Notion", hint: "Use Notion board" },
+    ],
+    initialValue: existingConfig.mode ?? "auto",
+  });
+
+  if (isCancelled(modeResult)) {
+    p.cancel("Setup cancelled");
+    process.exit(0);
+  }
+
+  const selectedMode = modeResult === "auto" ? undefined : (modeResult as "local" | "notion");
+
+  // Local specs directory (only ask if local mode or auto)
+  let specsDirectory = existingConfig.local?.specsDir ?? "specs";
+  if (selectedMode === "local" || selectedMode === undefined) {
+    const specsDirResult = await p.text({
+      message: "Specs directory (relative to project root):",
+      initialValue: specsDirectory,
+    });
+
+    if (isCancelled(specsDirResult)) {
+      p.cancel("Setup cancelled");
+      process.exit(0);
+    }
+
+    if (isNonEmptyString(specsDirResult)) {
+      specsDirectory = specsDirResult;
+    }
+  }
+
   // Build final config with validated values
   const config: Config = {
+    mode: selectedMode,
     notion: {
       boardId,
       viewId,
       boardName,
       statusColumn: statusColumns,
+    },
+    local: {
+      specsDir: specsDirectory,
     },
     git: {
       createBranch: isBoolean(createBranchResult) ? createBranchResult : true,
@@ -292,7 +342,9 @@ This is a one-time setup to connect GitHub CLI to your account.`,
 
   // Show summary
   p.note(
-    `Notion Board: ${config.notion.boardName ?? "Not configured"}
+    `Mode: ${config.mode ?? "auto-detect"}
+Specs Directory: ${config.local?.specsDir ?? "specs"}
+Notion Board: ${config.notion.boardName ?? "Not configured"}
 Status Columns: ${statusColumns.todo} → ${statusColumns.inProgress} → ${statusColumns.done}
 Create Branches: ${config.git.createBranch ? "Yes" : "No"}
 Create PRs: ${config.git.createPR ? "Yes" : "No"}

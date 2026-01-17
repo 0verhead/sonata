@@ -4,6 +4,7 @@ import { loadConfig, configExists } from "../lib/config.js";
 import {
   runOpenCodeCli,
   buildImplementationPrompt,
+  buildLocalImplementationPrompt,
   checkOpenCodeInstalled,
   killActiveProcess,
 } from "../lib/opencode.js";
@@ -41,11 +42,22 @@ import {
   updateTicketStatusViaMcp,
   type TicketInfo,
 } from "../lib/notion-via-opencode.js";
+import { resolveMode, ModeResolutionError } from "../lib/mode.js";
+import {
+  listSpecs,
+  getSpec,
+  getSpecsByStatus,
+  updateSpecStatus,
+  countSpecSteps,
+} from "../lib/specs.js";
+import type { Spec } from "../types/specs.js";
 
 interface RunOptions {
   cwd?: string;
   yes?: boolean;
   ticketId?: string;
+  local?: boolean;   // Use local specs mode
+  notion?: boolean;  // Use Notion mode
 }
 
 /**
@@ -57,17 +69,46 @@ interface RunOptions {
  * - One step per iteration, AI chooses priority
  */
 export async function runCommand(options: RunOptions = {}): Promise<void> {
-  const { cwd = process.cwd(), yes = false, ticketId: directTicketId } = options;
+  const { cwd = process.cwd(), yes = false, ticketId: directTicketId, local, notion } = options;
 
+  // Load config (may not exist for local-only mode)
+  const config = configExists() ? loadConfig() : null;
+
+  // Resolve mode
+  let mode: "local" | "notion";
+  try {
+    if (local) {
+      mode = "local";
+    } else if (notion) {
+      mode = "notion";
+    } else if (config) {
+      mode = resolveMode({ local, notion }, config, cwd);
+    } else {
+      // No config, check if specs folder exists
+      mode = "local"; // Default to local if no config
+    }
+  } catch (err) {
+    if (err instanceof ModeResolutionError) {
+      p.cancel(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
+
+  // Branch to local or Notion workflow
+  if (mode === "local") {
+    await runLocalCommand({ ...options, cwd, yes });
+    return;
+  }
+
+  // Notion mode - original workflow
   p.intro(chalk.bgBlue.white(" notion-code run "));
 
   // Check if Notion is configured
-  if (!configExists()) {
+  if (!config) {
     p.cancel("No configuration found. Run `notion-code setup` first.");
     process.exit(1);
   }
-
-  const config = loadConfig();
 
   if (!config.notion.boardId) {
     p.cancel("Notion board not configured. Run `notion-code setup` first.");
@@ -454,6 +495,238 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     p.note(
       "Run `notion-code run` again to continue, or\n" +
       "`notion-code loop` for autonomous mode.",
+      "Next Steps"
+    );
+  }
+
+  // Ensure cleanup
+  killActiveProcess();
+
+  p.outro(
+    result.isComplete
+      ? chalk.green("All done!")
+      : chalk.blue(`Iteration ${iteration} complete`)
+  );
+}
+
+/**
+ * Run local command - implement one spec step from specs/ folder
+ */
+async function runLocalCommand(options: RunOptions): Promise<void> {
+  const { cwd = process.cwd(), yes = false } = options;
+
+  p.intro(chalk.bgGreen.white(" notion-code run --local "));
+
+  // Load config for defaults
+  const config = configExists() ? loadConfig() : null;
+
+  // Check prerequisites
+  const s = p.spinner();
+  s.start("Checking prerequisites...");
+
+  const [hasOpenCode, inGitRepo] = await Promise.all([
+    checkOpenCodeInstalled(),
+    isGitRepo(cwd),
+  ]);
+
+  s.stop("Prerequisites checked");
+
+  if (!hasOpenCode) {
+    p.cancel("opencode CLI not found. Please install it first.");
+    process.exit(1);
+  }
+
+  // Get available specs (todo + in-progress)
+  const todoSpecs = getSpecsByStatus(cwd, "todo");
+  const inProgressSpecs = getSpecsByStatus(cwd, "in-progress");
+  const availableSpecs = [...inProgressSpecs, ...todoSpecs];
+
+  if (availableSpecs.length === 0) {
+    p.note(
+      "No specs found in todo or in-progress status.\n" +
+      "Run `notion-code plan --local` to create a spec first.",
+      "No Ready Specs"
+    );
+    p.outro("Create a spec with `notion-code plan --local`");
+    return;
+  }
+
+  // Let user select a spec (prioritize in-progress)
+  const specOptions = availableSpecs.map((spec) => ({
+    value: spec.id,
+    label: spec.status === "in-progress" 
+      ? `[IN PROGRESS] ${spec.title}` 
+      : `[TODO] ${spec.title}`,
+    hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
+  }));
+
+  const selectedSpecId = await p.select({
+    message: "Select a spec to implement:",
+    options: specOptions,
+  });
+
+  if (isCancelled(selectedSpecId)) {
+    p.cancel("Cancelled");
+    process.exit(0);
+  }
+
+  const selectedSpec = getSpec(cwd, String(selectedSpecId));
+  if (!selectedSpec) {
+    p.cancel("Spec not found");
+    process.exit(1);
+  }
+
+  // Create git branch if needed
+  let branch = "";
+  if (inGitRepo && config?.git.createBranch) {
+    const currentBranch = await getCurrentBranch(cwd);
+    if (currentBranch === config.git.baseBranch) {
+      const safeBranchName = selectedSpec.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .substring(0, 50);
+      branch = `task/${safeBranchName}`;
+
+      s.start(`Creating branch ${branch}...`);
+      await createBranch(branch, config.git.baseBranch, cwd);
+      s.stop(`Switched to branch ${branch}`);
+    } else {
+      branch = currentBranch;
+    }
+  }
+
+  // Initialize or update session
+  initSession(cwd, {
+    ticketId: selectedSpec.id,
+    ticketTitle: selectedSpec.title,
+    ticketUrl: selectedSpec.filepath,
+    branch,
+  });
+
+  // Update spec status to in-progress if it was todo
+  if (selectedSpec.status === "todo") {
+    updateSpecStatus(cwd, selectedSpec.id, "in-progress");
+    p.log.info("Spec status updated to in-progress");
+  }
+
+  // Initialize progress file if needed
+  if (!progressExists(cwd)) {
+    initProgress(cwd, `Spec: ${selectedSpec.title}`);
+    p.log.info("Initialized progress.txt");
+  }
+
+  // Increment iteration
+  const iteration = incrementIteration(cwd);
+
+  // Build the implementation prompt
+  const prompt = buildLocalImplementationPrompt({
+    specTitle: selectedSpec.title,
+    specContent: selectedSpec.content,
+    specFilepath: selectedSpec.filepath,
+    progressFile: "progress.txt",
+  });
+
+  // Get step counts
+  const steps = countSpecSteps(selectedSpec.content);
+
+  // Show what we're about to do
+  p.note(
+    `Spec: ${selectedSpec.title}\n` +
+    `File: ${selectedSpec.filepath}\n` +
+    `Steps: ${steps.completed}/${steps.total} complete\n` +
+    `Iteration: ${iteration}`,
+    "Implementing Spec"
+  );
+
+  // Confirm before running (skip if --yes flag)
+  if (!yes) {
+    const proceed = await p.confirm({
+      message: "Ready to implement one step?",
+      initialValue: true,
+    });
+
+    if (isCancelled(proceed) || proceed !== true) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+  }
+
+  // Run opencode
+  console.log();
+  console.log(chalk.dim("-".repeat(60)));
+  console.log(chalk.cyan("opencode output:"));
+  console.log(chalk.dim("-".repeat(60)));
+  console.log();
+
+  const result = await runOpenCodeCli(prompt, { cwd });
+
+  console.log();
+  console.log(chalk.dim("-".repeat(60)));
+  console.log();
+
+  // Handle result
+  if (!result.success) {
+    p.log.error(`opencode failed: ${result.error}`);
+    killActiveProcess();
+    process.exit(1);
+  }
+
+  if (result.isComplete) {
+    p.log.success("All spec steps complete!");
+    markProgressComplete(cwd);
+
+    // Update spec status to done
+    updateSpecStatus(cwd, selectedSpec.id, "done");
+    p.log.info("Spec status updated to done");
+
+    // Create PR if configured
+    if (inGitRepo && config?.git.createPR) {
+      const currentBranch = await getCurrentBranch(cwd);
+      if (currentBranch !== config.git.baseBranch) {
+        const commits = await getCommitsSinceBase(config.git.baseBranch, cwd);
+        const prTitle = selectedSpec.title;
+        const prBody = generatePRBody(commits, selectedSpec.title);
+
+        let shouldCreatePR: boolean | symbol = true;
+
+        if (!yes) {
+          shouldCreatePR = await p.confirm({
+            message: `Create PR: "${prTitle}"?`,
+            initialValue: true,
+          });
+
+          if (isCancelled(shouldCreatePR)) {
+            p.cancel("Cancelled");
+            process.exit(0);
+          }
+        }
+
+        if (shouldCreatePR === true) {
+          s.start(`Creating PR: "${prTitle}"...`);
+          try {
+            const prUrl = await createPR(
+              prTitle,
+              prBody,
+              config.git.baseBranch,
+              cwd
+            );
+            s.stop(`PR created: ${prUrl}`);
+          } catch (error) {
+            s.stop("Failed to create PR");
+            p.log.error(String(error));
+          }
+        }
+      }
+    }
+
+    // Clear session
+    clearSession(cwd);
+  } else {
+    p.log.info("Step complete. Spec not yet finished.");
+    p.note(
+      "Run `notion-code run --local` again to continue, or\n" +
+      "`notion-code loop --local` for autonomous mode.",
       "Next Steps"
     );
   }

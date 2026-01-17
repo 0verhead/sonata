@@ -31,12 +31,20 @@ import {
   hasActiveSession,
   countPrdSteps,
 } from "../lib/session.js";
+import {
+  specsExist,
+  specsDir,
+  getSpecStats,
+  listSpecs,
+} from "../lib/specs.js";
+import { describeModeState } from "../lib/mode.js";
 
 const DEFAULT_TASK_FILE = "TASKS.md";
 
 interface StatusOptions {
   taskFile?: string;
   cwd?: string;
+  local?: boolean;   // Show local specs status
 }
 
 export async function statusCommand(options: StatusOptions = {}): Promise<void> {
@@ -50,15 +58,42 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
   if (configExists()) {
     const config = loadConfig();
     console.log(`  ${chalk.green("✓")} Config file: ${getConfigPath()}`);
+    console.log(`    Mode: ${config.mode || "auto-detect"}`);
     console.log(
       `    Notion board: ${config.notion.boardName || config.notion.boardId || "Not configured"}`
     );
+    console.log(`    Specs dir: ${config.local?.specsDir || "specs"}`);
     console.log(`    Create branches: ${config.git.createBranch ? "Yes" : "No"}`);
     console.log(`    Create PRs: ${config.git.createPR ? "Yes" : "No"}`);
     console.log(`    Base branch: ${config.git.baseBranch}`);
     console.log(`    Max iterations: ${config.loop.maxIterations}`);
   } else {
     console.log(`  ${chalk.yellow("!")} No config found. Run \`notion-code setup\``);
+  }
+
+  // Local Specs status
+  console.log();
+  console.log(chalk.bold("Local Specs (specs/):"));
+  if (specsExist(cwd)) {
+    const stats = getSpecStats(cwd);
+    const specs = listSpecs(cwd);
+    console.log(`  ${chalk.green("✓")} Specs folder: ${specsDir(cwd)}`);
+    console.log(`    Total specs: ${stats.total}`);
+    console.log(`    Todo: ${stats.todo}`);
+    console.log(`    In Progress: ${stats.inProgress}`);
+    console.log(`    Done: ${stats.done}`);
+    
+    // Show recent specs
+    if (specs.length > 0) {
+      console.log(`    Recent:`);
+      specs.slice(0, 3).forEach((spec) => {
+        const statusIcon = spec.status === "done" ? "✓" : spec.status === "in-progress" ? "→" : "○";
+        console.log(`      ${chalk.dim(statusIcon)} ${spec.title} [${spec.status}]`);
+      });
+    }
+  } else {
+    console.log(`  ${chalk.dim("-")} No specs/ folder found`);
+    console.log(`    Run \`notion-code plan --local\` to create a spec`);
   }
 
   // Active Session status (PRD-based workflow)
@@ -198,12 +233,30 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     `  ${hasGh ? chalk.green("✓") : chalk.red("✗")} GitHub CLI (gh)`
   );
 
+  // Mode state
+  console.log();
+  console.log(chalk.bold("Mode State:"));
+  if (configExists()) {
+    const config = loadConfig();
+    console.log(`  ${describeModeState(config, cwd).split("\n").join("\n  ")}`);
+  } else if (specsExist(cwd)) {
+    console.log(`  Local specs/ folder available (will use local mode)`);
+  } else {
+    console.log(`  No mode configured. Run \`notion-code setup\` or create specs/ folder.`);
+  }
+
   // Next steps
   console.log();
   console.log(chalk.bold("Workflow:"));
-  console.log(`  1. ${chalk.cyan("notion-code plan")}    Create PRD for a ticket (collaborative)`);
-  console.log(`  2. ${chalk.cyan("notion-code run")}     Implement one PRD step`);
-  console.log(`  3. ${chalk.cyan("notion-code loop")}    Implement steps autonomously (AFK)`);
+  console.log(`  ${chalk.bold("Notion mode:")}`);
+  console.log(`  1. ${chalk.cyan("notion-code plan")}         Create PRD for a ticket (collaborative)`);
+  console.log(`  2. ${chalk.cyan("notion-code run")}          Implement one PRD step`);
+  console.log(`  3. ${chalk.cyan("notion-code loop")}         Implement steps autonomously (AFK)`);
+  console.log();
+  console.log(`  ${chalk.bold("Local mode:")}`);
+  console.log(`  1. ${chalk.cyan("notion-code plan --local")}  Create spec in specs/ folder`);
+  console.log(`  2. ${chalk.cyan("notion-code run --local")}   Implement one spec step`);
+  console.log(`  3. ${chalk.cyan("notion-code loop --local")}  Implement steps autonomously (AFK)`);
 
   console.log();
   p.outro("Run `notion-code plan` to start planning or `notion-code run` to implement");

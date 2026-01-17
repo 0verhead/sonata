@@ -4,6 +4,7 @@ import { loadConfig, configExists } from "../lib/config.js";
 import {
   runOpenCodeCli,
   buildImplementationPrompt,
+  buildLocalImplementationPrompt,
   checkOpenCodeInstalled,
   killActiveProcess,
 } from "../lib/opencode.js";
@@ -39,12 +40,21 @@ import {
   updateTicketStatusViaMcp,
   type TicketInfo,
 } from "../lib/notion-via-opencode.js";
+import { resolveMode, ModeResolutionError } from "../lib/mode.js";
+import {
+  getSpec,
+  getSpecsByStatus,
+  updateSpecStatus,
+  countSpecSteps,
+} from "../lib/specs.js";
 
 interface LoopOptions {
   iterations?: number;
   cwd?: string;
   hitl?: boolean;
   ticketId?: string;
+  local?: boolean;   // Use local specs mode
+  notion?: boolean;  // Use Notion mode
 }
 
 /**
@@ -56,18 +66,52 @@ interface LoopOptions {
  * - One step per iteration
  */
 export async function loopCommand(options: LoopOptions = {}): Promise<void> {
-  const config = loadConfig();
+  const { local, notion } = options;
+
+  // Load config (may not exist for local-only mode)
+  const configData = configExists() ? loadConfig() : null;
+  const defaultIterations = configData?.loop.maxIterations ?? 10;
+
   const {
-    iterations = config.loop.maxIterations,
+    iterations = defaultIterations,
     cwd = process.cwd(),
     hitl = false,
     ticketId: directTicketId,
   } = options;
 
-  const mode = hitl ? "HITL" : "AFK";
+  // Resolve mode
+  let resolvedMode: "local" | "notion";
+  try {
+    if (local) {
+      resolvedMode = "local";
+    } else if (notion) {
+      resolvedMode = "notion";
+    } else if (configData) {
+      resolvedMode = resolveMode({ local, notion }, configData, cwd);
+    } else {
+      // No config, default to local
+      resolvedMode = "local";
+    }
+  } catch (err) {
+    if (err instanceof ModeResolutionError) {
+      p.cancel(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
+
+  // Branch to local or Notion workflow
+  if (resolvedMode === "local") {
+    await runLocalLoopCommand({ ...options, cwd, iterations, hitl });
+    return;
+  }
+
+  // Notion mode - original workflow
+  const config = configData!;
+  const modeLabel = hitl ? "HITL" : "AFK";
   p.intro(
     chalk.bgMagenta.white(
-      ` notion-code loop (${mode} mode, max ${iterations} iterations) `
+      ` notion-code loop (${modeLabel} mode, max ${iterations} iterations) `
     )
   );
 
@@ -476,6 +520,256 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
       "- Run `notion-code loop` again to continue\n" +
       "- Run `notion-code run` for manual control\n" +
       "- Check progress.txt for current state",
+    "Max Iterations Reached"
+  );
+
+  // Ensure cleanup
+  killActiveProcess();
+
+  p.outro(chalk.yellow(`Stopped after ${iterations} iterations`));
+}
+
+/**
+ * Run local loop command - implement multiple spec steps autonomously
+ */
+async function runLocalLoopCommand(options: LoopOptions & { iterations: number }): Promise<void> {
+  const { iterations, cwd = process.cwd(), hitl = false } = options;
+
+  // Load config for defaults
+  const config = configExists() ? loadConfig() : null;
+
+  const modeLabel = hitl ? "HITL" : "AFK";
+  p.intro(
+    chalk.bgGreen.white(
+      ` notion-code loop --local (${modeLabel} mode, max ${iterations} iterations) `
+    )
+  );
+
+  // Check prerequisites
+  const s = p.spinner();
+  s.start("Checking prerequisites...");
+
+  const [hasOpenCode, inGitRepo] = await Promise.all([
+    checkOpenCodeInstalled(),
+    isGitRepo(cwd),
+  ]);
+
+  s.stop("Prerequisites checked");
+
+  if (!hasOpenCode) {
+    p.cancel("opencode CLI not found. Please install it first.");
+    process.exit(1);
+  }
+
+  // Get available specs (todo + in-progress)
+  const todoSpecs = getSpecsByStatus(cwd, "todo");
+  const inProgressSpecs = getSpecsByStatus(cwd, "in-progress");
+  const availableSpecs = [...inProgressSpecs, ...todoSpecs];
+
+  if (availableSpecs.length === 0) {
+    p.note(
+      "No specs found in todo or in-progress status.\n" +
+      "Run `notion-code plan --local` to create a spec first.",
+      "No Ready Specs"
+    );
+    p.outro("Create a spec with `notion-code plan --local`");
+    return;
+  }
+
+  // Let user select a spec (prioritize in-progress)
+  const specOptions = availableSpecs.map((spec) => ({
+    value: spec.id,
+    label: spec.status === "in-progress"
+      ? `[IN PROGRESS] ${spec.title}`
+      : `[TODO] ${spec.title}`,
+    hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
+  }));
+
+  const selectedSpecId = await p.select({
+    message: "Select a spec to implement:",
+    options: specOptions,
+  });
+
+  if (isCancelled(selectedSpecId)) {
+    p.cancel("Cancelled");
+    process.exit(0);
+  }
+
+  let selectedSpec = getSpec(cwd, String(selectedSpecId));
+  if (!selectedSpec) {
+    p.cancel("Spec not found");
+    process.exit(1);
+  }
+
+  // Create git branch if needed
+  let branch = "";
+  if (inGitRepo && config?.git.createBranch) {
+    const currentBranch = await getCurrentBranch(cwd);
+    if (currentBranch === config.git.baseBranch) {
+      const safeBranchName = selectedSpec.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .substring(0, 50);
+      branch = `task/${safeBranchName}`;
+
+      s.start(`Creating branch ${branch}...`);
+      await createBranch(branch, config.git.baseBranch, cwd);
+      s.stop(`Switched to branch ${branch}`);
+    } else {
+      branch = currentBranch;
+    }
+  }
+
+  // Initialize session
+  initSession(cwd, {
+    ticketId: selectedSpec.id,
+    ticketTitle: selectedSpec.title,
+    ticketUrl: selectedSpec.filepath,
+    branch,
+  });
+
+  // Update spec status to in-progress if it was todo
+  if (selectedSpec.status === "todo") {
+    updateSpecStatus(cwd, selectedSpec.id, "in-progress");
+    selectedSpec = getSpec(cwd, selectedSpec.id)!;
+  }
+
+  // Initialize progress if needed
+  const startIteration = getCurrentIteration(cwd);
+  if (!progressExists(cwd)) {
+    initProgress(cwd, `Spec: ${selectedSpec.title}`);
+    p.log.info("Initialized progress.txt");
+  }
+
+  // Get initial step counts
+  let steps = countSpecSteps(selectedSpec.content);
+
+  // Confirm before starting AFK mode
+  if (!hitl) {
+    p.note(
+      `Spec: ${selectedSpec.title}\n` +
+      `Steps: ${steps.completed}/${steps.total} complete\n` +
+      `Max iterations: ${iterations}\n` +
+      `Branch: ${branch || "N/A"}\n\n` +
+      "The loop will run autonomously until:\n" +
+      "- All spec steps are complete\n" +
+      "- Max iterations reached\n" +
+      "- An error occurs",
+      "AFK Mode"
+    );
+
+    const confirm = await p.confirm({
+      message: "Start the Ralph loop?",
+      initialValue: true,
+    });
+
+    if (isCancelled(confirm) || confirm !== true) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+  }
+
+  // The Ralph Loop
+  console.log();
+  p.log.step(chalk.bold("Starting Ralph loop (local mode)..."));
+  console.log();
+
+  for (let i = 1; i <= iterations; i++) {
+    // Refresh spec to get latest content
+    selectedSpec = getSpec(cwd, selectedSpec.id)!;
+    steps = countSpecSteps(selectedSpec.content);
+
+    const currentIteration = startIteration + i;
+
+    console.log(chalk.cyan(`\n${"=".repeat(60)}`));
+    console.log(
+      chalk.cyan.bold(`  Iteration ${i}/${iterations} (total: ${currentIteration})`)
+    );
+    console.log(chalk.cyan(`${"=".repeat(60)}\n`));
+
+    // HITL mode: confirm before each iteration
+    if (hitl && i > 1) {
+      const continueLoop = await p.confirm({
+        message: "Continue to next iteration?",
+        initialValue: true,
+      });
+
+      if (isCancelled(continueLoop) || continueLoop !== true) {
+        p.log.info("Loop paused by user");
+        break;
+      }
+    }
+
+    // Build implementation prompt
+    const prompt = buildLocalImplementationPrompt({
+      specTitle: selectedSpec.title,
+      specContent: selectedSpec.content,
+      specFilepath: selectedSpec.filepath,
+      progressFile: "progress.txt",
+    });
+
+    // Run opencode
+    incrementIteration(cwd);
+    const result = await runOpenCodeCli(prompt, { cwd });
+
+    console.log();
+
+    // Check for errors
+    if (!result.success) {
+      p.log.error(`opencode failed: ${result.error}`);
+      p.log.info(`Stopped at iteration ${i}`);
+      break;
+    }
+
+    // Check for completion
+    if (result.isComplete) {
+      console.log();
+      p.log.success(chalk.green.bold("All spec steps complete!"));
+      markProgressComplete(cwd);
+
+      // Update spec status to done
+      updateSpecStatus(cwd, selectedSpec.id, "done");
+
+      // Create PR
+      if (inGitRepo && config?.git.createPR && branch !== config.git.baseBranch) {
+        s.start("Creating pull request...");
+        try {
+          const prTitle = selectedSpec.title;
+          const prUrl = await createPR(
+            prTitle,
+            `Completed via notion-code Ralph loop (local mode)\n\nIterations: ${i}\nSee progress.txt for details.`,
+            config.git.baseBranch,
+            cwd
+          );
+          s.stop(`PR created: ${prUrl}`);
+        } catch (error) {
+          s.stop("Failed to create PR");
+          p.log.warn(`Could not create PR: ${error}`);
+        }
+      }
+
+      // Clear session
+      clearSession(cwd);
+
+      // Ensure cleanup before exit
+      killActiveProcess();
+
+      p.outro(chalk.green(`Completed in ${i} iteration${i === 1 ? "" : "s"}!`));
+      return;
+    }
+
+    p.log.info(`Iteration ${i} complete, continuing...`);
+  }
+
+  // Max iterations reached
+  console.log();
+  p.log.warn(`Max iterations (${iterations}) reached`);
+  p.note(
+    "The spec is not yet complete. You can:\n" +
+    "- Run `notion-code loop --local` again to continue\n" +
+    "- Run `notion-code run --local` for manual control\n" +
+    "- Check progress.txt for current state",
     "Max Iterations Reached"
   );
 

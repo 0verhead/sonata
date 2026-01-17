@@ -3,6 +3,7 @@ import chalk from "chalk";
 import { loadConfig, configExists } from "../lib/config.js";
 import {
   buildPlanningPrompt,
+  buildLocalPlanningPrompt,
   checkOpenCodeInstalled,
   spawnOpenCodeTui,
 } from "../lib/opencode.js";
@@ -28,33 +29,66 @@ import {
   hasActiveSession,
   updateSessionPrd,
 } from "../lib/session.js";
+import { resolveMode, ModeResolutionError } from "../lib/mode.js";
+import { ensureSpecsDir, specsDir, listSpecs, getSpec } from "../lib/specs.js";
 
 interface PlanOptions {
   cwd?: string;
   ticketId?: string; // Optionally specify ticket directly
+  local?: boolean;   // Use local specs mode
+  notion?: boolean;  // Use Notion mode
 }
 
 /**
  * Plan command - collaborative PRD creation with the developer
  *
  * This is Phase 1 of the True Ralph pattern:
- * - Select a ticket from Notion
+ * - Select a ticket from Notion OR create local spec
  * - Collaboratively write the PRD with the developer
- * - Save the PRD to Notion as a child page
+ * - Save the PRD to Notion as a child page OR to specs/ folder
  * - Human approves the plan before any execution
  */
 export async function planCommand(options: PlanOptions = {}): Promise<void> {
-  const { cwd = process.cwd() } = options;
+  const { cwd = process.cwd(), local, notion } = options;
 
+  // Load config (may not exist for local-only mode)
+  const config = configExists() ? loadConfig() : null;
+
+  // Resolve mode
+  let mode: "local" | "notion";
+  try {
+    if (local) {
+      mode = "local";
+    } else if (notion) {
+      mode = "notion";
+    } else if (config) {
+      mode = resolveMode({ local, notion }, config, cwd);
+    } else {
+      // No config, check if specs folder exists
+      mode = "local"; // Default to local if no config
+    }
+  } catch (err) {
+    if (err instanceof ModeResolutionError) {
+      p.cancel(err.message);
+      process.exit(1);
+    }
+    throw err;
+  }
+
+  // Branch to local or Notion workflow
+  if (mode === "local") {
+    await runLocalPlanCommand({ ...options, cwd });
+    return;
+  }
+
+  // Notion mode - original workflow
   p.intro(chalk.bgCyan.black(" notion-code plan (HITL, collaborative) "));
 
   // Check if Notion is configured
-  if (!configExists()) {
+  if (!config) {
     p.cancel("No configuration found. Run `notion-code setup` first.");
     process.exit(1);
   }
-
-  const config = loadConfig();
 
   if (!config.notion.boardId) {
     p.cancel("Notion board not configured. Run `notion-code setup` first.");
@@ -393,5 +427,186 @@ async function runPlanningSession(options: {
     }
 
     p.outro(chalk.yellow("Planning session ended without PRD"));
+  }
+}
+
+/**
+ * Run local planning command - create spec in specs/ folder
+ */
+async function runLocalPlanCommand(options: PlanOptions): Promise<void> {
+  const { cwd = process.cwd() } = options;
+
+  p.intro(chalk.bgGreen.black(" notion-code plan --local (specs folder) "));
+
+  // Load config for defaults
+  const config = configExists() ? loadConfig() : null;
+  const specsFolder = config?.local?.specsDir ?? "specs";
+
+  // Check prerequisites
+  const s = p.spinner();
+  s.start("Checking prerequisites...");
+
+  const [hasOpenCode, inGitRepo] = await Promise.all([
+    checkOpenCodeInstalled(),
+    isGitRepo(cwd),
+  ]);
+
+  s.stop("Prerequisites checked");
+
+  if (!hasOpenCode) {
+    p.cancel("opencode CLI not found. Please install it first.");
+    process.exit(1);
+  }
+
+  // Ensure specs directory exists
+  ensureSpecsDir(cwd, specsFolder);
+  p.log.info(`Specs directory: ${specsDir(cwd, specsFolder)}`);
+
+  // Get title for the spec
+  const title = await p.text({
+    message: "What would you like to build?",
+    placeholder: "Add user authentication",
+    validate: (value) => {
+      if (!value || value.trim().length === 0) {
+        return "Title is required";
+      }
+      return undefined;
+    },
+  });
+
+  if (isCancelled(title)) {
+    p.cancel("Cancelled");
+    process.exit(0);
+  }
+
+  const specTitle = String(title).trim();
+
+  // Create git branch if needed
+  let branch = "";
+  if (inGitRepo && config?.git.createBranch) {
+    const currentBranch = await getCurrentBranch(cwd);
+    if (currentBranch === config.git.baseBranch) {
+      const safeBranchName = specTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .substring(0, 50);
+      branch = `task/${safeBranchName}`;
+
+      s.start(`Creating branch ${branch}...`);
+      await createBranch(branch, config.git.baseBranch, cwd);
+      s.stop(`Switched to branch ${branch}`);
+    } else {
+      branch = currentBranch;
+      p.log.info(`Working on branch: ${branch}`);
+    }
+  }
+
+  // Show planning session info
+  p.note(
+    `Title: ${specTitle}\n` +
+    `Specs folder: ${specsFolder}/\n\n` +
+    "OpenCode will help you create a spec. Here's the flow:\n\n" +
+    "1. AI explores codebase and asks questions\n" +
+    "2. AI proposes a spec, you give feedback\n" +
+    `3. When satisfied, say: ${chalk.cyan('"Approve"')} or ${chalk.cyan('"Save the spec"')}\n` +
+    `4. AI creates the spec file in ${specsFolder}/\n` +
+    `5. Exit OpenCode (${chalk.dim("Ctrl+C")} or type ${chalk.dim("/quit")})\n\n` +
+    chalk.yellow("Tip: Use Tab to switch to Plan mode for discussion-only."),
+    "Local Planning Session"
+  );
+
+  const confirm = await p.confirm({
+    message: "Launch OpenCode for planning?",
+    initialValue: true,
+  });
+
+  if (isCancelled(confirm) || confirm !== true) {
+    p.cancel("Cancelled");
+    process.exit(0);
+  }
+
+  // Build the local planning prompt
+  const prompt = buildLocalPlanningPrompt({
+    title: specTitle,
+    specsDir: specsFolder,
+    cwd,
+  });
+
+  console.log();
+  console.log(chalk.cyan("Launching OpenCode TUI..."));
+  console.log(chalk.dim("(Exit with Ctrl+C or /quit when done)"));
+  console.log();
+
+  // Spawn OpenCode TUI with the prompt
+  const result = spawnOpenCodeTui(prompt, { cwd });
+
+  console.log();
+  console.log(chalk.dim("-".repeat(60)));
+
+  // Check if user interrupted
+  if (result.signal === "SIGINT") {
+    p.log.warn("Planning session interrupted");
+  }
+
+  // Check if spec was created
+  s.start("Checking if spec was created...");
+
+  const specs = listSpecs(cwd);
+  const newSpec = specs.find(
+    (spec) =>
+      spec.title.toLowerCase() === specTitle.toLowerCase() ||
+      spec.id.includes(
+        specTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "")
+      )
+  );
+
+  if (newSpec) {
+    s.stop("Spec found!");
+
+    p.log.success(`Spec created: ${newSpec.filepath}`);
+    p.note(
+      `The spec has been saved to ${newSpec.filepath}\n` +
+      "Run `notion-code run --local` to start implementing the spec.",
+      "Next Steps"
+    );
+    p.outro(chalk.green("Planning session finished"));
+  } else {
+    s.stop("No new spec found");
+
+    // Offer retry options
+    const action = await p.select({
+      message: "What would you like to do?",
+      options: [
+        { value: "retry", label: "Relaunch OpenCode", hint: "continue the planning session" },
+        { value: "manual", label: "I'll create it manually", hint: "exit for now" },
+        { value: "done", label: "I didn't want to save yet", hint: "exit, plan again later" },
+      ],
+    });
+
+    if (action === "retry") {
+      // Relaunch planning session (recursive call)
+      await runLocalPlanCommand(options);
+      return;
+    }
+
+    if (action === "manual") {
+      p.note(
+        `You can create the spec manually in ${specsFolder}/\n` +
+        "Use the format from templates/SPEC.example.md\n" +
+        "Then run `notion-code run --local` to start implementing.",
+        "Manual Spec Creation"
+      );
+    } else {
+      p.note(
+        "Run `notion-code plan --local` again when you're ready to continue.",
+        "Next Steps"
+      );
+    }
+
+    p.outro(chalk.yellow("Planning session ended without spec"));
   }
 }

@@ -28,10 +28,14 @@ program
   .description("Create a PRD for a ticket (collaborative planning)")
   .option("-d, --dir <directory>", "Working directory", process.cwd())
   .option("--ticket <id>", "Ticket ID to plan (skip selection)")
+  .option("--local", "Use local specs/ folder instead of Notion")
+  .option("--notion", "Use Notion board")
   .action(async (options) => {
     await planCommand({
       cwd: options.dir,
       ticketId: options.ticket,
+      local: options.local,
+      notion: options.notion,
     });
   });
 
@@ -42,11 +46,15 @@ program
   .option("-d, --dir <directory>", "Working directory", process.cwd())
   .option("-y, --yes", "Auto-confirm prompts", false)
   .option("--ticket <id>", "Ticket ID to work on (bypass status filter)")
+  .option("--local", "Use local specs/ folder instead of Notion")
+  .option("--notion", "Use Notion board")
   .action(async (options) => {
     await runCommand({
       cwd: options.dir,
       yes: options.yes,
       ticketId: options.ticket,
+      local: options.local,
+      notion: options.notion,
     });
   });
 
@@ -57,12 +65,16 @@ program
   .option("-d, --dir <directory>", "Working directory", process.cwd())
   .option("--hitl", "Human-in-the-loop mode (pause after each iteration)", false)
   .option("--ticket <id>", "Ticket ID to work on (bypass status filter)")
+  .option("--local", "Use local specs/ folder instead of Notion")
+  .option("--notion", "Use Notion board")
   .action(async (iterations, options) => {
     await loopCommand({
       iterations: iterations ? parseInt(iterations, 10) : undefined,
       cwd: options.dir,
       hitl: options.hitl,
       ticketId: options.ticket,
+      local: options.local,
+      notion: options.notion,
     });
   });
 
@@ -72,10 +84,12 @@ program
   .description("Show current status: config, progress, git state")
   .option("-t, --task-file <file>", "Task file path", "TASKS.md")
   .option("-d, --dir <directory>", "Working directory", process.cwd())
+  .option("--local", "Show local specs status")
   .action(async (options) => {
     await statusCommand({
       taskFile: options.taskFile,
       cwd: options.dir,
+      local: options.local,
     });
   });
 
