@@ -535,8 +535,8 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
 async function runLocalLoopCommand(options: LoopOptions & { iterations: number }): Promise<void> {
   const { iterations, cwd = process.cwd(), hitl = false } = options;
 
-  // Load config for defaults
-  const config = configExists() ? loadConfig() : null;
+  // Load config for defaults (loadConfig returns sensible defaults if no config file exists)
+  const config = loadConfig();
 
   const modeLabel = hitl ? "HITL" : "AFK";
   p.intro(
