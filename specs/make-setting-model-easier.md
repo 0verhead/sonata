@@ -4,7 +4,7 @@ title: Make settings the used model in opencode easier
 status: in-progress
 priority: high
 created: 2026-01-17T14:30:00Z
-updated: 2026-01-17T17:15:00.000Z
+updated: 2026-01-17T17:45:00.000Z
 ---
 
 ## Summary
@@ -15,8 +15,8 @@ Add a `sonata model` command to easily view, search, and set the default AI mode
 
 - [x] Add `@inquirer/search` dependency to `package.json`
 - [x] Extend `OpenCodeConfigSchema` in `src/lib/opencode-config.ts` to include `model` and `reasoningEffort` fields
-- [ ] Add helper functions `getModel()`, `setModel()`, `getReasoningEffort()`, `setReasoningEffort()` in `opencode-config.ts`
-- [ ] Add helper function `getAvailableModels()` that calls `opencode models` and parses output
+- [x] Add helper functions `getModel()`, `setModel()`, `getReasoningEffort()`, `setReasoningEffort()` in `opencode-config.ts`
+- [x] Add helper function `getAvailableModels()` that calls `opencode models` and parses output
 - [ ] Create `src/commands/model.ts` with the `modelCommand` function
 - [ ] Implement `sonata model` (no args) - show current model and reasoning effort
 - [ ] Implement `sonata model list [provider]` - list available models (optionally filtered by provider)

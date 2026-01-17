@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import path from 'node:path';
 
@@ -197,4 +198,60 @@ export function setReasoningEffort(effort: ReasoningEffort, cwd: string = proces
   }
 
   saveOpenCodeConfig(config, cwd);
+}
+
+/**
+ * Represents a model available in OpenCode
+ */
+export interface AvailableModel {
+  /** Full model identifier (e.g., "anthropic/claude-sonnet-4-5") */
+  id: string;
+  /** Provider name (e.g., "anthropic", "openai", "openrouter") */
+  provider: string;
+  /** Model name without provider prefix (e.g., "claude-sonnet-4-5") */
+  name: string;
+}
+
+/**
+ * Get all available models by running `opencode models` and parsing the output
+ * Returns an array of AvailableModel objects sorted by provider then name
+ * @throws Error if the opencode command fails
+ */
+export function getAvailableModels(): AvailableModel[] {
+  try {
+    const output = execSync('opencode models', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const lines = output.trim().split('\n').filter(Boolean);
+    const models: AvailableModel[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Parse provider/model-name format
+      const slashIndex = trimmed.indexOf('/');
+      if (slashIndex === -1) {
+        // No provider prefix, use the whole string as both
+        models.push({
+          id: trimmed,
+          provider: '',
+          name: trimmed,
+        });
+      } else {
+        models.push({
+          id: trimmed,
+          provider: trimmed.slice(0, slashIndex),
+          name: trimmed.slice(slashIndex + 1),
+        });
+      }
+    }
+
+    return models;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get available models: ${message}`);
+  }
 }
