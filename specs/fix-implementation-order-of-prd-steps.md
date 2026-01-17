@@ -4,7 +4,7 @@ title: Fix implementation order of prd steps
 status: done
 priority: high
 created: 2026-01-17T15:00:00.000Z
-updated: 2026-01-17T21:30:00.000Z
+updated: 2026-01-17T14:01:29.940Z
 ---
 
 ## Summary
