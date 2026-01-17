@@ -29,7 +29,7 @@ import {
 import {
   loadCurrentSession,
   hasActiveSession,
-  countPrdSteps,
+  countPrdTasks,
 } from "../lib/session.js";
 import {
   specsExist,
@@ -111,8 +111,8 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
       
       // PRD status
       if (session.prdContent) {
-        const steps = countPrdSteps(session.prdContent);
-        console.log(`    ${chalk.cyan("PRD loaded:")} ${steps.completed}/${steps.total} steps complete`);
+        const tasks = countPrdTasks(session.prdContent);
+        console.log(`    ${chalk.cyan("PRD loaded:")} ${tasks.completed}/${tasks.total} tasks complete`);
         if (session.prdFetchedAt) {
           console.log(`    PRD fetched: ${session.prdFetchedAt}`);
         }

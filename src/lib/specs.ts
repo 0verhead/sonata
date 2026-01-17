@@ -288,9 +288,9 @@ export function updateSpecContent(cwd: string, id: string, newContent: string): 
 }
 
 /**
- * Count steps in a spec (looks for checkbox patterns)
+ * Count tasks in a spec (looks for checkbox patterns)
  */
-export function countSpecSteps(content: string): { total: number; completed: number } {
+export function countSpecTasks(content: string): { total: number; completed: number } {
   const uncheckedPattern = /- \[ \]/g;
   const checkedPattern = /- \[x\]/gi;
 

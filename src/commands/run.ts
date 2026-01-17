@@ -32,7 +32,7 @@ import {
   hasActiveSession,
   incrementIteration,
   updateSessionPrd,
-  countPrdSteps,
+  countPrdTasks,
   clearSession,
   initSession,
 } from "../lib/session.js";
@@ -48,7 +48,7 @@ import {
   getSpec,
   getSpecsByStatus,
   updateSpecStatus,
-  countSpecSteps,
+  countSpecTasks,
 } from "../lib/specs.js";
 import type { Spec } from "../types/specs.js";
 
@@ -61,12 +61,12 @@ interface RunOptions {
 }
 
 /**
- * Run command - implement one PRD step
+ * Run command - implement one PRD task
  *
  * True Ralph pattern:
  * - Only works on tickets that have a completed PRD
- * - AI autonomously implements steps from the PRD
- * - One step per iteration, AI chooses priority
+ * - AI autonomously implements tasks from the PRD
+ * - One task per iteration, AI chooses priority
  */
 export async function runCommand(options: RunOptions = {}): Promise<void> {
   const { cwd = process.cwd(), yes = false, ticketId: directTicketId, local, notion } = options;
@@ -169,11 +169,11 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
       branch,
     });
     
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
     
     session = loadCurrentSession(cwd);
@@ -194,17 +194,17 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     s.stop(prd ? "PRD fetched" : "No PRD found");
 
     if (prd) {
-      const steps = countPrdSteps(prd.content);
+      const tasks = countPrdTasks(prd.content);
       updateSessionPrd(cwd, {
         prdPageId: prd.pageId,
         prdContent: prd.content,
-        totalSteps: steps.total,
+        totalTasks: tasks.total,
       });
       prdContent = prd.content;
       session = loadCurrentSession(cwd);
       
-      if (session?.totalSteps && session.completedSteps !== undefined) {
-        p.log.info(`Progress: ${session.completedSteps}/${session.totalSteps} steps`);
+      if (session?.totalTasks && session.completedTasks !== undefined) {
+        p.log.info(`Progress: ${session.completedTasks}/${session.totalTasks} tasks`);
       }
     } else {
       p.note(
@@ -344,7 +344,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     }
 
     // Initialize session with PRD
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     initSession(cwd, {
       ticketId: selectedTicket.id,
       ticketTitle: selectedTicket.title,
@@ -355,7 +355,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
 
     session = loadCurrentSession(cwd);
@@ -398,7 +398,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   // Show what we're about to do
   p.note(
     `Ticket: ${session.ticketTitle}\n` +
-    `PRD steps: ${session.totalSteps ?? "?"}\n` +
+    `PRD tasks: ${session.totalTasks ?? "?"}\n` +
     `Iteration: ${iteration}`,
     "Implementing PRD"
   );
@@ -406,7 +406,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   // Confirm before running (skip if --yes flag)
   if (!yes) {
     const proceed = await p.confirm({
-      message: "Ready to implement one step?",
+      message: "Ready to implement one task?",
       initialValue: true,
     });
 
@@ -437,7 +437,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   }
 
   if (result.isComplete) {
-    p.log.success("All PRD steps complete!");
+    p.log.success("All PRD tasks complete!");
     markProgressComplete(cwd);
 
     // Update ticket status to "Done"
@@ -491,7 +491,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     // Clear session
     clearSession(cwd);
   } else {
-    p.log.info("Step complete. Task not yet finished.");
+    p.log.info("Task complete. Spec not yet finished.");
     p.note(
       "Run `sonata run` again to continue, or\n" +
       "`sonata loop` for autonomous mode.",
@@ -627,14 +627,14 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
     progressFile: "progress.txt",
   });
 
-  // Get step counts
-  const steps = countSpecSteps(selectedSpec.content);
+  // Get task counts
+  const tasks = countSpecTasks(selectedSpec.content);
 
   // Show what we're about to do
   p.note(
     `Spec: ${selectedSpec.title}\n` +
     `File: ${selectedSpec.filepath}\n` +
-    `Steps: ${steps.completed}/${steps.total} complete\n` +
+    `Tasks: ${tasks.completed}/${tasks.total} complete\n` +
     `Iteration: ${iteration}`,
     "Implementing Spec"
   );
@@ -642,7 +642,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   // Confirm before running (skip if --yes flag)
   if (!yes) {
     const proceed = await p.confirm({
-      message: "Ready to implement one step?",
+      message: "Ready to implement one task?",
       initialValue: true,
     });
 
@@ -673,7 +673,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   }
 
   if (result.isComplete) {
-    p.log.success("All spec steps complete!");
+    p.log.success("All spec tasks complete!");
     markProgressComplete(cwd);
 
     // Update spec status to done
@@ -723,7 +723,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
     // Clear session
     clearSession(cwd);
   } else {
-    p.log.info("Step complete. Spec not yet finished.");
+    p.log.info("Task complete. Spec not yet finished.");
     p.note(
       "Run `sonata run --local` again to continue, or\n" +
       "`sonata loop --local` for autonomous mode.",

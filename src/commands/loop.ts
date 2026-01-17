@@ -30,7 +30,7 @@ import {
   loadCurrentSession,
   incrementIteration,
   updateSessionPrd,
-  countPrdSteps,
+  countPrdTasks,
   clearSession,
   initSession,
 } from "../lib/session.js";
@@ -45,7 +45,7 @@ import {
   getSpec,
   getSpecsByStatus,
   updateSpecStatus,
-  countSpecSteps,
+  countSpecTasks,
 } from "../lib/specs.js";
 
 interface LoopOptions {
@@ -58,12 +58,12 @@ interface LoopOptions {
 }
 
 /**
- * Loop command - implement multiple PRD steps autonomously
+ * Loop command - implement multiple PRD tasks autonomously
  *
  * True Ralph pattern:
  * - Only works on tickets that have a completed PRD
  * - Executes multiple iterations autonomously up to a max limit
- * - One step per iteration
+ * - One task per iteration
  */
 export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   const { local, notion } = options;
@@ -180,11 +180,11 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
       branch,
     });
     
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
     
     session = loadCurrentSession(cwd);
@@ -204,11 +204,11 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     s.stop(prd ? "PRD fetched" : "No PRD found");
 
     if (prd) {
-      const steps = countPrdSteps(prd.content);
+      const tasks = countPrdTasks(prd.content);
       updateSessionPrd(cwd, {
         prdPageId: prd.pageId,
         prdContent: prd.content,
-        totalSteps: steps.total,
+        totalTasks: tasks.total,
       });
       prdContent = prd.content;
       session = loadCurrentSession(cwd);
@@ -350,7 +350,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     }
 
     // Initialize session with PRD
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     initSession(cwd, {
       ticketId: selectedTicket.id,
       ticketTitle: selectedTicket.title,
@@ -361,7 +361,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
 
     session = loadCurrentSession(cwd);
@@ -393,11 +393,11 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   if (!hitl) {
     p.note(
       `Ticket: ${session.ticketTitle}\n` +
-      `PRD steps: ${session.totalSteps ?? "?"}\n` +
+      `PRD tasks: ${session.totalTasks ?? "?"}\n` +
       `Max iterations: ${iterations}\n` +
       `Branch: ${session.branch || "N/A"}\n\n` +
       "The loop will run autonomously until:\n" +
-      "- All PRD steps are complete (AI outputs completion signal)\n" +
+      "- All PRD tasks are complete (AI outputs completion signal)\n" +
       "- Max iterations reached\n" +
       "- An error occurs",
       "AFK Mode"
@@ -470,7 +470,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     // Check for completion
     if (result.isComplete) {
       console.log();
-      p.log.success(chalk.green.bold("All PRD steps complete!"));
+      p.log.success(chalk.green.bold("All PRD tasks complete!"));
       markProgressComplete(cwd);
 
       // Update ticket status to "Done"
@@ -642,18 +642,18 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     p.log.info("Initialized progress.txt");
   }
 
-  // Get initial step counts
-  let steps = countSpecSteps(selectedSpec.content);
+  // Get initial task counts
+  let tasks = countSpecTasks(selectedSpec.content);
 
   // Confirm before starting AFK mode
   if (!hitl) {
     p.note(
       `Spec: ${selectedSpec.title}\n` +
-      `Steps: ${steps.completed}/${steps.total} complete\n` +
+      `Tasks: ${tasks.completed}/${tasks.total} complete\n` +
       `Max iterations: ${iterations}\n` +
       `Branch: ${branch || "N/A"}\n\n` +
       "The loop will run autonomously until:\n" +
-      "- All spec steps are complete\n" +
+      "- All spec tasks are complete\n" +
       "- Max iterations reached\n" +
       "- An error occurs",
       "AFK Mode"
@@ -678,7 +678,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
   for (let i = 1; i <= iterations; i++) {
     // Refresh spec to get latest content
     selectedSpec = getSpec(cwd, selectedSpec.id)!;
-    steps = countSpecSteps(selectedSpec.content);
+    tasks = countSpecTasks(selectedSpec.content);
 
     const currentIteration = startIteration + i;
 
@@ -725,7 +725,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     // Check for completion
     if (result.isComplete) {
       console.log();
-      p.log.success(chalk.green.bold("All spec steps complete!"));
+      p.log.success(chalk.green.bold("All spec tasks complete!"));
       markProgressComplete(cwd);
 
       // Update spec status to done

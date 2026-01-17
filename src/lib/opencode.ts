@@ -170,10 +170,10 @@ Use this structure:
 ## Summary
 Brief description of what this PRD accomplishes.
 
-## Steps
-- [ ] Step 1: Description
-- [ ] Step 2: Description
-- [ ] Step 3: Description
+## Tasks
+- [ ] Create database schema for metrics
+- [ ] Implement core tracking functionality
+- [ ] Add export functionality for formats
 
 ## Files
 - path/to/file1.ts
@@ -213,9 +213,9 @@ export function buildImplementationPrompt(options: {
   // Add PRD update instruction if we have the page ID
   const prdUpdateInstruction = prdPageId
     ? `
-6. UPDATE the PRD in Notion to mark the step as done:
+6. UPDATE the PRD in Notion to mark the task as done:
    - Use notion-update-page with page ID: ${prdPageId}
-   - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed step
+   - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed task
    - Use the replace_content_range command to update just that line`
     : "";
 
@@ -230,14 +230,14 @@ ${prdContent}
 ---
 
 INSTRUCTIONS:
-You are implementing this PRD step by step.
+You are implementing this PRD task by task.
 
 1. READ the PRD and ${progressFile} to understand:
-   - What steps exist
+   - What tasks exist
    - What has already been completed
    - What remains
 
-2. CHOOSE the next step based on this priority order:
+2. CHOOSE the next task based on this priority order:
    1. Architectural decisions and core abstractions
    2. Integration points between modules
    3. Unknown unknowns and spike work
@@ -246,13 +246,13 @@ You are implementing this PRD step by step.
    
    Fail fast on risky work. Save easy wins for later.
 
-3. IMPLEMENT only ONE step:
+3. IMPLEMENT only ONE task:
    - Make focused, small changes
    - Run feedback loops: types, tests, lint
    - Fix any issues before continuing
 
 4. UPDATE ${progressFile} with:
-   - Which step you completed
+   - Which task you completed
    - Key decisions made
    - Files changed
    - Any blockers or notes for next iteration
@@ -260,10 +260,10 @@ You are implementing this PRD step by step.
 5. COMMIT the changes with a descriptive message
 ${prdUpdateInstruction}
 
-If ALL steps in the PRD are complete and feedback loops pass:
+If ALL tasks in the PRD are complete and feedback loops pass:
   Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
 
-IMPORTANT: Only work on ONE step per session.
+IMPORTANT: Only work on ONE task per session.
 `.trim();
 }
 
@@ -379,10 +379,10 @@ updated: <ISO timestamp>
 ## Summary
 Brief description of what this spec accomplishes.
 
-## Steps
-- [ ] Step 1: Description
-- [ ] Step 2: Description
-- [ ] Step 3: Description
+## Tasks
+- [ ] Create database schema for metrics
+- [ ] Implement core tracking functionality
+- [ ] Add export functionality for formats
 
 ## Files
 - path/to/file1.ts
@@ -429,14 +429,14 @@ ${specContent}
 ---
 
 INSTRUCTIONS:
-You are implementing this spec step by step.
+You are implementing this spec task by task.
 
 1. READ the spec and ${progressFile} to understand:
-   - What steps exist
+   - What tasks exist
    - What has already been completed
    - What remains
 
-2. CHOOSE the next step based on this priority order:
+2. CHOOSE the next task based on this priority order:
    1. Architectural decisions and core abstractions
    2. Integration points between modules
    3. Unknown unknowns and spike work
@@ -445,28 +445,28 @@ You are implementing this spec step by step.
    
    Fail fast on risky work. Save easy wins for later.
 
-3. IMPLEMENT only ONE step:
+3. IMPLEMENT only ONE task:
    - Make focused, small changes
    - Run feedback loops: types, tests, lint
    - Fix any issues before continuing
 
 4. UPDATE ${progressFile} with:
-   - Which step you completed
+   - Which task you completed
    - Key decisions made
    - Files changed
    - Any blockers or notes for next iteration
 
 5. COMMIT the changes with a descriptive message
 
-6. UPDATE the spec file to mark the step as done:
-   - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed step
+6. UPDATE the spec file to mark the task as done:
+   - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed task
    - Update the frontmatter: set status to "in-progress" if not already
    - Update the "updated" timestamp in the frontmatter
 
-If ALL steps in the spec are complete and feedback loops pass:
+If ALL tasks in the spec are complete and feedback loops pass:
   - Update the spec status to "done" in the frontmatter
   - Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
 
-IMPORTANT: Only work on ONE step per session.
+IMPORTANT: Only work on ONE task per session.
 `.trim();
 }

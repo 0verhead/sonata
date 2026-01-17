@@ -382,7 +382,7 @@ async function runPlanningSession(options: {
     updateSessionPrd(cwd, {
       prdPageId: prdStatus.prdPageId,
       prdContent: "", // Will be fetched when needed by run/loop
-      totalSteps: undefined,
+      totalTasks: undefined,
     });
 
     p.log.success("PRD created in Notion!");
