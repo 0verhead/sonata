@@ -1,10 +1,10 @@
 ---
 id: fix-implementation-order-of-prd-steps
 title: Fix implementation order of prd steps
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T15:00:00.000Z
-updated: 2026-01-17T21:00:00.000Z
+updated: 2026-01-17T21:30:00.000Z
 ---
 
 ## Summary
@@ -22,7 +22,7 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 - [x] Update all references in `src/commands/run.ts`: function calls, variable names, user-facing messages
 - [x] Update all references in `src/commands/loop.ts`: function calls, variable names, user-facing messages
 - [x] Update `specs/add-sota-eslint-with-eslint-prettier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
-- [ ] Update `specs/make-setting-model-easier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
+- [x] Update `specs/make-setting-model-easier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
 
 ## Files
 - `src/lib/opencode.ts`
