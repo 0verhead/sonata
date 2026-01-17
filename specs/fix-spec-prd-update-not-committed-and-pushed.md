@@ -4,7 +4,7 @@ title: fix spec prd update is not commited and pushed to remote pr branch
 status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T16:55:00.000Z
+updated: 2026-01-17T16:43:31.824Z
 ---
 
 ## Summary
