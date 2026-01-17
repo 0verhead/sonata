@@ -1,0 +1,5 @@
+# Run lint-staged (eslint --fix, prettier --write on staged files)
+npx lint-staged
+
+# Run typecheck on the entire project
+npm run typecheck
