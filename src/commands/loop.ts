@@ -13,6 +13,7 @@ import {
   initProgress,
   getCurrentIteration,
   markProgressComplete,
+  deleteProgress,
 } from "../lib/progress.js";
 import {
   isGitRepo,
@@ -499,8 +500,9 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
         }
       }
 
-      // Clear session
+      // Clear session and progress
       clearSession(cwd);
+      deleteProgress(cwd);
 
       // Ensure cleanup before exit
       killActiveProcess();
@@ -749,8 +751,9 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
         }
       }
 
-      // Clear session
+      // Clear session and progress
       clearSession(cwd);
+      deleteProgress(cwd);
 
       // Ensure cleanup before exit
       killActiveProcess();
