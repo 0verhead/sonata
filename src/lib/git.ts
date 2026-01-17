@@ -207,7 +207,7 @@ export async function getCommitsSinceBase(
  */
 export function generatePRTitle(commits: string[]): string {
   if (commits.length === 0) {
-    return "Changes from notion-code";
+    return "Changes from sonata";
   }
   
   if (commits.length === 1) {

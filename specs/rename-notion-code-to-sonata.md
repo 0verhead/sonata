@@ -4,7 +4,7 @@ title: Rename notion-code to sonata
 status: in-progress
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T15:00:00.000Z
+updated: 2026-01-17T16:00:00.000Z
 ---
 
 ## Summary
@@ -15,7 +15,7 @@ Rename the project from "notion-code" to "sonata" across all source files, confi
 - [x] Step 2: Update `src/index.ts` - change CLI program name and description
 - [x] Step 3: Update config paths in `src/lib/config.ts`, `src/lib/session.ts`, and `src/lib/opencode.ts` to use `.sonata` directories
 - [x] Step 4: Update all command files (`setup.ts`, `status.ts`, `run.ts`, `loop.ts`, `plan.ts`) - change intro banners, help text, and command examples to use "sonata"
-- [ ] Step 5: Update remaining lib files (`mode.ts`, `git.ts`, `progress.ts`) and `src/types/index.ts` - change error messages, PR title default, comments, and JSDoc
+- [x] Step 5: Update remaining lib files (`mode.ts`, `git.ts`, `progress.ts`) and `src/types/index.ts` - change error messages, PR title default, comments, and JSDoc
 - [ ] Step 6: Update `templates/PROMPT.md` - change documentation reference
 - [ ] Step 7: Update `README.md` - change all ~48 references including title, architecture diagram, config paths, git URL (`git@github.com:0verhead/sonata.git`), and command examples
 - [ ] Step 8: Delete `specs/local-mode-feature.md`

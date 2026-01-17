@@ -73,7 +73,7 @@ export function resolveMode(
   }
 
   throw new ModeResolutionError(
-    "No mode configured. Run `notion-code setup` first, or create a specs/ folder."
+    "No mode configured. Run `sonata setup` first, or create a specs/ folder."
   );
 }
 
