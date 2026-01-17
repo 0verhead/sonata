@@ -4,7 +4,7 @@ title: Make settings the used model in opencode easier
 status: done
 priority: high
 created: 2026-01-17T14:30:00Z
-updated: 2026-01-17T19:00:00.000Z
+updated: 2026-01-17T17:04:58.785Z
 ---
 
 ## Summary
