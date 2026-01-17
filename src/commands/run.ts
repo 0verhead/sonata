@@ -489,8 +489,9 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
       }
     }
 
-    // Clear session
+    // Clear session and progress file
     clearSession(cwd);
+    deleteProgress(cwd);
   } else {
     p.log.info("Task complete. Spec not yet finished.");
     p.note(
@@ -721,8 +722,9 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
       }
     }
 
-    // Clear session
+    // Clear session and progress file
     clearSession(cwd);
+    deleteProgress(cwd);
   } else {
     p.log.info("Task complete. Spec not yet finished.");
     p.note(
