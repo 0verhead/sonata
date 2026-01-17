@@ -4,7 +4,7 @@ title: Add sota eslint with eslint-prettier
 status: in-progress
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T16:00:00.000Z
+updated: 2026-01-17T17:00:00.000Z
 ---
 
 ## Summary
@@ -20,7 +20,7 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - [x] Create `.prettierrc` config file (use defaults)
 - [x] Create `.prettierignore` file (dist, node_modules, etc.)
 - [x] Install Husky and lint-staged (`husky`, `lint-staged`)
-- [ ] Add lint-staged config to `package.json` (eslint --fix, prettier --write, tsc --noEmit)
+- [x] Add lint-staged config to `package.json` (eslint --fix, prettier --write, tsc --noEmit)
 - [ ] Update `package.json` scripts (update `lint`, add `lint:fix`, `format`, `format:check`)
 - [ ] Initialize Husky and create `.husky/pre-commit` hook
 - [ ] Update `buildImplementationPrompt` in `src/lib/opencode.ts` to reference specific lint/format/typecheck commands
