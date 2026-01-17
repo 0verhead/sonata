@@ -12,6 +12,7 @@ import {
   progressExists,
   initProgress,
   markProgressComplete,
+  deleteProgress,
 } from "../lib/progress.js";
 import {
   isGitRepo,
