@@ -1,14 +1,14 @@
-import { execa } from 'execa'
+import { execa } from 'execa';
 
 /**
  * Check if current directory is a git repository
  */
 export async function isGitRepo(cwd: string = process.cwd()): Promise<boolean> {
   try {
-    await execa('git', ['rev-parse', '--git-dir'], { cwd })
-    return true
+    await execa('git', ['rev-parse', '--git-dir'], { cwd });
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -16,16 +16,16 @@ export async function isGitRepo(cwd: string = process.cwd()): Promise<boolean> {
  * Get the current branch name
  */
 export async function getCurrentBranch(cwd: string = process.cwd()): Promise<string> {
-  const result = await execa('git', ['branch', '--show-current'], { cwd })
-  return result.stdout.trim()
+  const result = await execa('git', ['branch', '--show-current'], { cwd });
+  return result.stdout.trim();
 }
 
 /**
  * Check if there are uncommitted changes
  */
 export async function hasChanges(cwd: string = process.cwd()): Promise<boolean> {
-  const result = await execa('git', ['status', '--porcelain'], { cwd })
-  return result.stdout.trim().length > 0
+  const result = await execa('git', ['status', '--porcelain'], { cwd });
+  return result.stdout.trim().length > 0;
 }
 
 /**
@@ -38,20 +38,20 @@ export async function createBranch(
 ): Promise<void> {
   // Fetch latest from remote
   try {
-    await execa('git', ['fetch', 'origin', baseBranch], { cwd })
+    await execa('git', ['fetch', 'origin', baseBranch], { cwd });
   } catch {
     // Might not have remote, continue anyway
   }
 
   // Create and checkout new branch
-  await execa('git', ['checkout', '-b', branchName], { cwd })
+  await execa('git', ['checkout', '-b', branchName], { cwd });
 }
 
 /**
  * Switch to an existing branch
  */
 export async function switchBranch(branchName: string, cwd: string = process.cwd()): Promise<void> {
-  await execa('git', ['checkout', branchName], { cwd })
+  await execa('git', ['checkout', branchName], { cwd });
 }
 
 /**
@@ -62,10 +62,10 @@ export async function branchExists(
   cwd: string = process.cwd()
 ): Promise<boolean> {
   try {
-    await execa('git', ['rev-parse', '--verify', branchName], { cwd })
-    return true
+    await execa('git', ['rev-parse', '--verify', branchName], { cwd });
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -73,14 +73,14 @@ export async function branchExists(
  * Stage all changes
  */
 export async function stageAll(cwd: string = process.cwd()): Promise<void> {
-  await execa('git', ['add', '-A'], { cwd })
+  await execa('git', ['add', '-A'], { cwd });
 }
 
 /**
  * Commit staged changes
  */
 export async function commit(message: string, cwd: string = process.cwd()): Promise<void> {
-  await execa('git', ['commit', '-m', message], { cwd })
+  await execa('git', ['commit', '-m', message], { cwd });
 }
 
 /**
@@ -90,10 +90,10 @@ export async function push(
   cwd: string = process.cwd(),
   setUpstream: boolean = false
 ): Promise<void> {
-  const branch = await getCurrentBranch(cwd)
+  const branch = await getCurrentBranch(cwd);
   await (setUpstream
     ? execa('git', ['push', '-u', 'origin', branch], { cwd })
-    : execa('git', ['push'], { cwd }))
+    : execa('git', ['push'], { cwd }));
 }
 
 /**
@@ -106,18 +106,18 @@ export async function createPR(
   cwd: string = process.cwd()
 ): Promise<string> {
   // Push first
-  await push(cwd, true)
+  await push(cwd, true);
 
   // Create PR using --body-file - to read body from stdin (avoids shell escaping issues)
   const result = await execa(
     'gh',
     ['pr', 'create', '--title', title, '--body-file', '-', '--base', baseBranch],
     { cwd, input: body }
-  )
+  );
 
   // Extract PR URL from output
-  const prUrl = result.stdout.trim()
-  return prUrl
+  const prUrl = result.stdout.trim();
+  return prUrl;
 }
 
 /**
@@ -125,10 +125,10 @@ export async function createPR(
  */
 export async function checkGhInstalled(): Promise<boolean> {
   try {
-    await execa('gh', ['--version'])
-    return true
+    await execa('gh', ['--version']);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -137,10 +137,10 @@ export async function checkGhInstalled(): Promise<boolean> {
  */
 export async function checkGhAuthenticated(): Promise<boolean> {
   try {
-    await execa('gh', ['auth', 'status'])
-    return true
+    await execa('gh', ['auth', 'status']);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -152,10 +152,10 @@ export function generateBranchName(taskTitle: string, taskId: string): string {
     .toLowerCase()
     .replaceAll(/[^a-z0-9]+/g, '-')
     .replaceAll(/^-|-$/g, '')
-    .slice(0, 40)
+    .slice(0, 40);
 
-  const shortId = taskId.replaceAll('-', '').slice(0, 8)
-  return `task/${slug}-${shortId}`
+  const shortId = taskId.replaceAll('-', '').slice(0, 8);
+  return `task/${slug}-${shortId}`;
 }
 
 /**
@@ -163,10 +163,10 @@ export function generateBranchName(taskTitle: string, taskId: string): string {
  */
 export async function getRemoteUrl(cwd: string = process.cwd()): Promise<string | null> {
   try {
-    const result = await execa('git', ['remote', 'get-url', 'origin'], { cwd })
-    return result.stdout.trim()
+    const result = await execa('git', ['remote', 'get-url', 'origin'], { cwd });
+    return result.stdout.trim();
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -178,10 +178,12 @@ export async function getCommitsSinceBase(
   cwd: string = process.cwd()
 ): Promise<string[]> {
   try {
-    const result = await execa('git', ['log', `${baseBranch}..HEAD`, '--pretty=format:%s'], { cwd })
-    return result.stdout.trim().split('\n').filter(Boolean)
+    const result = await execa('git', ['log', `${baseBranch}..HEAD`, '--pretty=format:%s'], {
+      cwd,
+    });
+    return result.stdout.trim().split('\n').filter(Boolean);
   } catch {
-    return []
+    return [];
   }
 }
 
@@ -191,45 +193,45 @@ export async function getCommitsSinceBase(
  */
 export function generatePRTitle(commits: string[]): string {
   if (commits.length === 0) {
-    return 'Changes from sonata'
+    return 'Changes from sonata';
   }
 
   if (commits.length === 1) {
-    return commits[0]
+    return commits[0];
   }
 
   // Look for conventional commits (fix:, feat:, refactor:, etc.) - these are most descriptive
   const conventionalCommit = commits.find((c) =>
     /^(fix|feat|refactor|chore|docs|style|test|perf|ci|build)(\(.+\))?:/.test(c)
-  )
+  );
 
   if (conventionalCommit) {
-    return conventionalCommit
+    return conventionalCommit;
   }
 
   // Otherwise use the most recent commit (first in array, most likely to describe the work)
-  return commits[0]
+  return commits[0];
 }
 
 /**
  * Generate PR body from commits and task title
  */
 export function generatePRBody(commits: string[], taskTitle?: string): string {
-  const lines = ['## Summary', '']
+  const lines = ['## Summary', ''];
 
   if (taskTitle) {
-    lines.push(`**Task:** ${taskTitle}`, '')
+    lines.push(`**Task:** ${taskTitle}`, '');
   }
 
   if (commits.length > 0) {
-    lines.push('## Changes', '')
+    lines.push('## Changes', '');
     for (const commit of commits) {
-      lines.push(`- ${commit}`)
+      lines.push(`- ${commit}`);
     }
-    lines.push('')
+    lines.push('');
   }
 
-  return lines.join('\n')
+  return lines.join('\n');
 }
 
 /**
@@ -237,9 +239,9 @@ export function generatePRBody(commits: string[], taskTitle?: string): string {
  * Branch format: task/{slug} or task/{slug}-{shortId}
  */
 export function extractSlugFromBranch(branchName: string): string | null {
-  if (!branchName.startsWith('task/')) return null
+  if (!branchName.startsWith('task/')) return null;
   // Remove "task/" prefix and optional "-{8-char-hex}" suffix
-  return branchName.replace('task/', '').replace(/-[a-f0-9]{8}$/, '')
+  return branchName.replace('task/', '').replace(/-[a-f0-9]{8}$/, '');
 }
 
 /**
@@ -250,7 +252,7 @@ export function generateSlugFromTitle(title: string): string {
     .toLowerCase()
     .replaceAll(/[^a-z0-9]+/g, '-')
     .replaceAll(/^-|-$/g, '')
-    .slice(0, 50)
+    .slice(0, 50);
 }
 
 /**
@@ -258,11 +260,11 @@ export function generateSlugFromTitle(title: string): string {
  * Handles partial matches due to truncation
  */
 export function ticketMatchesBranch(ticketTitle: string, branchName: string): boolean {
-  const branchSlug = extractSlugFromBranch(branchName)
-  if (!branchSlug) return false
+  const branchSlug = extractSlugFromBranch(branchName);
+  if (!branchSlug) return false;
 
-  const ticketSlug = generateSlugFromTitle(ticketTitle)
+  const ticketSlug = generateSlugFromTitle(ticketTitle);
 
   // Check if one starts with the other (handles truncation)
-  return ticketSlug.startsWith(branchSlug) || branchSlug.startsWith(ticketSlug)
+  return ticketSlug.startsWith(branchSlug) || branchSlug.startsWith(ticketSlug);
 }

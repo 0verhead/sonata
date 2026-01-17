@@ -1,13 +1,13 @@
-import { spawn, spawnSync } from 'node:child_process'
-import * as fs from 'node:fs'
-import path from 'node:path'
+import { spawn, spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import path from 'node:path';
 
-import type { OpenCodeResult } from '../types/index.js'
+import type { OpenCodeResult } from '../types/index.js';
 
 // Unique signal for PRD completion. Use a specific marker that's unlikely to be echoed in instructions.
 // The regex match looks for this on its own line to avoid false positives when AI quotes the instruction.
-const COMPLETE_SIGNAL = 'PRD_COMPLETE_SIGNAL_7x9k2m'
-const COMPLETE_SIGNAL_REGEX = /^\s*PRD_COMPLETE_SIGNAL_7x9k2m\s*$/m
+const COMPLETE_SIGNAL = 'PRD_COMPLETE_SIGNAL_7x9k2m';
+const COMPLETE_SIGNAL_REGEX = /^\s*PRD_COMPLETE_SIGNAL_7x9k2m\s*$/m;
 
 /**
  * Extract task title from opencode output
@@ -24,16 +24,16 @@ function extractTaskTitle(output: string): string | undefined {
     /\*\*Task:\*\* (.+?)(?:\n|$)/i,
     /Working on[: ]+[""]?([^""\n]+)[""]?/i,
     /Task[: ]+[""]([^""]+)[""]/i,
-  ]
+  ];
 
   for (const pattern of patterns) {
-    const match = output.match(pattern)
+    const match = output.match(pattern);
     if (match?.[1]) {
-      return match[1].trim()
+      return match[1].trim();
     }
   }
 
-  return undefined
+  return undefined;
 }
 
 /**
@@ -51,21 +51,21 @@ export async function runOpenCodeCli(
   prompt: string,
   options: { cwd?: string; timeoutMs?: number } = {}
 ): Promise<OpenCodeResult> {
-  const cwd = options.cwd ?? process.cwd()
+  const cwd = options.cwd ?? process.cwd();
 
   return new Promise((resolve) => {
     const proc = spawn('opencode', ['run', prompt], {
       cwd,
       stdio: ['inherit', 'pipe', 'inherit'],
-    })
+    });
 
-    let output = ''
+    let output = '';
 
     proc.stdout?.on('data', (chunk: Buffer) => {
-      const text = chunk.toString()
-      process.stdout.write(chunk)
-      output += text
-    })
+      const text = chunk.toString();
+      process.stdout.write(chunk);
+      output += text;
+    });
 
     proc.on('close', (code) => {
       resolve({
@@ -73,8 +73,8 @@ export async function runOpenCodeCli(
         output,
         isComplete: COMPLETE_SIGNAL_REGEX.test(output),
         taskTitle: extractTaskTitle(output),
-      })
-    })
+      });
+    });
 
     proc.on('error', (err) => {
       resolve({
@@ -82,13 +82,13 @@ export async function runOpenCodeCli(
         output,
         isComplete: false,
         error: err.message,
-      })
-    })
-  })
+      });
+    });
+  });
 }
 
 // Alias for backwards compatibility
-export const runOpenCode = runOpenCodeCli
+export const runOpenCode = runOpenCodeCli;
 
 /**
  * Check if opencode CLI is available
@@ -97,16 +97,16 @@ export async function checkOpenCodeInstalled(): Promise<boolean> {
   return new Promise((resolve) => {
     const proc = spawn('opencode', ['--version'], {
       stdio: ['ignore', 'pipe', 'ignore'],
-    })
+    });
 
     proc.on('close', (code) => {
-      resolve(code === 0)
-    })
+      resolve(code === 0);
+    });
 
     proc.on('error', () => {
-      resolve(false)
-    })
-  })
+      resolve(false);
+    });
+  });
 }
 
 /**
@@ -127,11 +127,11 @@ export function killActiveProcess(): void {
  * Build the planning prompt for collaborative PRD creation
  */
 export function buildPlanningPrompt(options: {
-  ticketId: string
-  ticketTitle: string
-  ticketUrl: string
+  ticketId: string;
+  ticketTitle: string;
+  ticketUrl: string;
 }): string {
-  const { ticketId, ticketTitle, ticketUrl } = options
+  const { ticketId, ticketTitle, ticketUrl } = options;
 
   return `
 You are helping create a PRD (Product Requirements Document) for a Notion ticket.
@@ -196,20 +196,20 @@ When X, Y, and Z are complete and tests pass.
 - After saving, confirm with this EXACT message: "PRD saved to Notion! You can now exit and run \`sonata run\` to start implementation."
    (NOTE: The command is \`sonata run\`, NOT \`opencode run\`)
 - If you're unsure whether to save, ask: "Would you like me to save this PRD to Notion now?"
-`.trim()
+`.trim();
 }
 
 /**
  * Build the implementation prompt for PRD-based execution
  */
 export function buildImplementationPrompt(options: {
-  ticketTitle: string
-  ticketUrl: string
-  prdContent: string
-  prdPageId?: string
-  progressFile?: string
+  ticketTitle: string;
+  ticketUrl: string;
+  prdContent: string;
+  prdPageId?: string;
+  progressFile?: string;
 }): string {
-  const { ticketTitle, ticketUrl, prdContent, prdPageId, progressFile = 'progress.txt' } = options
+  const { ticketTitle, ticketUrl, prdContent, prdPageId, progressFile = 'progress.txt' } = options;
 
   // Add PRD update instruction if we have the page ID
   const prdUpdateInstruction = prdPageId
@@ -218,7 +218,7 @@ export function buildImplementationPrompt(options: {
    - Use notion-update-page with page ID: ${prdPageId}
    - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed task
    - Use the replace_content_range command to update just that line`
-    : ''
+    : '';
 
   return `
 @${progressFile}
@@ -269,15 +269,15 @@ If ALL tasks in the PRD are complete and feedback loops pass:
   Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
 
 IMPORTANT: Only work on ONE task per session.
-`.trim()
+`.trim();
 }
 
 /**
  * Result from spawning OpenCode TUI
  */
 export interface SpawnTuiResult {
-  exitCode: number | null
-  signal: NodeJS.Signals | null
+  exitCode: number | null;
+  signal: NodeJS.Signals | null;
 }
 
 /**
@@ -296,41 +296,41 @@ export function spawnOpenCodeTui(
   prompt: string,
   options: { cwd?: string; sessionId?: string } = {}
 ): SpawnTuiResult {
-  const cwd = options.cwd ?? process.cwd()
+  const cwd = options.cwd ?? process.cwd();
 
   // Write prompt to temp file to avoid shell argument length limits
-  const promptDir = path.join(cwd, '.sonata')
+  const promptDir = path.join(cwd, '.sonata');
   if (!fs.existsSync(promptDir)) {
-    fs.mkdirSync(promptDir, { recursive: true })
+    fs.mkdirSync(promptDir, { recursive: true });
   }
-  const promptFile = path.join(promptDir, 'plan-prompt.txt')
-  fs.writeFileSync(promptFile, prompt, 'utf8')
+  const promptFile = path.join(promptDir, 'plan-prompt.txt');
+  fs.writeFileSync(promptFile, prompt, 'utf8');
 
   try {
     // Read prompt from file using shell redirection
-    const args: string[] = []
+    const args: string[] = [];
 
     // Continue existing session if provided
     if (options.sessionId) {
-      args.push('--session', options.sessionId)
+      args.push('--session', options.sessionId);
     }
 
     // Use --prompt with the content (opencode handles long prompts)
-    args.push('--prompt', prompt)
+    args.push('--prompt', prompt);
 
     const result = spawnSync('opencode', args, {
       cwd,
       stdio: 'inherit', // Full TUI passthrough
-    })
+    });
 
     return {
       exitCode: result.status,
       signal: result.signal,
-    }
+    };
   } finally {
     // Clean up temp file
     if (fs.existsSync(promptFile)) {
-      fs.unlinkSync(promptFile)
+      fs.unlinkSync(promptFile);
     }
   }
 }
@@ -339,11 +339,11 @@ export function spawnOpenCodeTui(
  * Build the planning prompt for local spec creation
  */
 export function buildLocalPlanningPrompt(options: {
-  title: string
-  specsDir: string
-  cwd: string
+  title: string;
+  specsDir: string;
+  cwd: string;
 }): string {
-  const { title, specsDir } = options
+  const { title, specsDir } = options;
 
   return `
 You are helping create a spec (PRD) for a local project task.
@@ -409,19 +409,19 @@ When X, Y, and Z are complete and tests pass.
 - After saving, confirm with this EXACT message: "Spec saved to ${specsDir}/! You can now exit and run \`sonata run --local\` to start implementation."
    (NOTE: The command is \`sonata run --local\`, NOT \`opencode run\`)
 - If you're unsure whether to save, ask: "Would you like me to save this spec now?"
-`.trim()
+`.trim();
 }
 
 /**
  * Build the implementation prompt for local spec-based execution
  */
 export function buildLocalImplementationPrompt(options: {
-  specTitle: string
-  specContent: string
-  specFilepath: string
-  progressFile?: string
+  specTitle: string;
+  specContent: string;
+  specFilepath: string;
+  progressFile?: string;
 }): string {
-  const { specTitle, specContent, specFilepath, progressFile = 'progress.txt' } = options
+  const { specTitle, specContent, specFilepath, progressFile = 'progress.txt' } = options;
 
   return `
 @${progressFile}
@@ -477,5 +477,5 @@ If ALL tasks in the spec are complete and feedback loops pass:
   - Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
 
 IMPORTANT: Only work on ONE task per session.
-`.trim()
+`.trim();
 }

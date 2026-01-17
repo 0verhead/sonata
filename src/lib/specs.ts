@@ -1,5 +1,5 @@
-import * as fs from 'node:fs'
-import path from 'node:path'
+import * as fs from 'node:fs';
+import path from 'node:path';
 
 import {
   SpecFrontmatterSchema,
@@ -8,31 +8,31 @@ import {
   type SpecStatus,
   type CreateSpecData,
   type ListSpecsOptions,
-} from '../types/specs.js'
+} from '../types/specs.js';
 
-const DEFAULT_SPECS_DIR = 'specs'
+const DEFAULT_SPECS_DIR = 'specs';
 
 /**
  * Get the specs directory path
  */
 export function specsDir(cwd: string, customDir?: string): string {
-  return path.join(cwd, customDir ?? DEFAULT_SPECS_DIR)
+  return path.join(cwd, customDir ?? DEFAULT_SPECS_DIR);
 }
 
 /**
  * Check if specs folder exists
  */
 export function specsExist(cwd: string, customDir?: string): boolean {
-  return fs.existsSync(specsDir(cwd, customDir))
+  return fs.existsSync(specsDir(cwd, customDir));
 }
 
 /**
  * Ensure specs directory exists
  */
 export function ensureSpecsDir(cwd: string, customDir?: string): void {
-  const dir = specsDir(cwd, customDir)
+  const dir = specsDir(cwd, customDir);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -46,49 +46,49 @@ export function specFilename(title: string): string {
       .replaceAll(/[^a-z0-9]+/g, '-')
       .replaceAll(/^-|-$/g, '')
       .slice(0, 60) + '.md'
-  )
+  );
 }
 
 /**
  * Parse YAML frontmatter from markdown content
  */
 function parseFrontmatter(content: string): {
-  frontmatter: Record<string, unknown>
-  body: string
+  frontmatter: Record<string, unknown>;
+  body: string;
 } {
-  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/
-  const match = content.match(frontmatterRegex)
+  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+  const match = content.match(frontmatterRegex);
 
   if (!match) {
-    return { frontmatter: {}, body: content }
+    return { frontmatter: {}, body: content };
   }
 
-  const yamlContent = match[1]
-  const body = match[2]
+  const yamlContent = match[1];
+  const body = match[2];
 
   // Simple YAML parsing (handles basic key: value pairs)
-  const frontmatter: Record<string, unknown> = {}
-  const lines = yamlContent.split('\n')
+  const frontmatter: Record<string, unknown> = {};
+  const lines = yamlContent.split('\n');
 
   for (const line of lines) {
-    const colonIndex = line.indexOf(':')
+    const colonIndex = line.indexOf(':');
     if (colonIndex > 0) {
-      const key = line.slice(0, Math.max(0, colonIndex)).trim()
-      let value: string | undefined = line.slice(Math.max(0, colonIndex + 1)).trim()
+      const key = line.slice(0, Math.max(0, colonIndex)).trim();
+      let value: string | undefined = line.slice(Math.max(0, colonIndex + 1)).trim();
 
       // Remove quotes if present
       if (
         (value.startsWith('"') && value.endsWith('"')) ||
         (value.startsWith("'") && value.endsWith("'"))
       ) {
-        value = value.slice(1, -1)
+        value = value.slice(1, -1);
       }
 
-      frontmatter[key] = value
+      frontmatter[key] = value;
     }
   }
 
-  return { frontmatter, body }
+  return { frontmatter, body };
 }
 
 /**
@@ -100,15 +100,15 @@ function serializeFrontmatter(frontmatter: SpecFrontmatter): string {
     `id: ${frontmatter.id}`,
     `title: ${frontmatter.title}`,
     `status: ${frontmatter.status}`,
-  ]
+  ];
 
   if (frontmatter.priority) {
-    lines.push(`priority: ${frontmatter.priority}`)
+    lines.push(`priority: ${frontmatter.priority}`);
   }
 
-  lines.push(`created: ${frontmatter.created}`, `updated: ${frontmatter.updated}`, '---')
+  lines.push(`created: ${frontmatter.created}`, `updated: ${frontmatter.updated}`, '---');
 
-  return lines.join('\n')
+  return lines.join('\n');
 }
 
 /**
@@ -116,22 +116,22 @@ function serializeFrontmatter(frontmatter: SpecFrontmatter): string {
  */
 function parseSpecFile(filepath: string): Spec | null {
   try {
-    const content = fs.readFileSync(filepath, 'utf8')
-    const { frontmatter, body } = parseFrontmatter(content)
+    const content = fs.readFileSync(filepath, 'utf8');
+    const { frontmatter, body } = parseFrontmatter(content);
 
-    const result = SpecFrontmatterSchema.safeParse(frontmatter)
+    const result = SpecFrontmatterSchema.safeParse(frontmatter);
     if (!result.success) {
-      console.warn(`Invalid spec frontmatter in ${filepath}: ${result.error.message}`)
-      return null
+      console.warn(`Invalid spec frontmatter in ${filepath}: ${result.error.message}`);
+      return null;
     }
 
     return {
       ...result.data,
       content: body.trim(),
       filepath,
-    }
+    };
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -139,67 +139,67 @@ function parseSpecFile(filepath: string): Spec | null {
  * List all specs in the specs folder
  */
 export function listSpecs(cwd: string, options?: ListSpecsOptions): Spec[] {
-  const dir = specsDir(cwd)
+  const dir = specsDir(cwd);
 
   if (!fs.existsSync(dir)) {
-    return []
+    return [];
   }
 
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'))
-  const specs: Spec[] = []
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.md'));
+  const specs: Spec[] = [];
 
   for (const file of files) {
-    const filepath = path.join(dir, file)
-    const spec = parseSpecFile(filepath)
+    const filepath = path.join(dir, file);
+    const spec = parseSpecFile(filepath);
     if (spec) {
       // Apply filters
       if (options?.status && spec.status !== options.status) {
-        continue
+        continue;
       }
       if (options?.priority && spec.priority !== options.priority) {
-        continue
+        continue;
       }
-      specs.push(spec)
+      specs.push(spec);
     }
   }
 
   // Sort by priority (high > medium > low), then by created date
-  const priorityOrder = { high: 0, medium: 1, low: 2 }
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
   specs.sort((a, b) => {
-    const aPriority = a.priority ? priorityOrder[a.priority] : 999
-    const bPriority = b.priority ? priorityOrder[b.priority] : 999
+    const aPriority = a.priority ? priorityOrder[a.priority] : 999;
+    const bPriority = b.priority ? priorityOrder[b.priority] : 999;
     if (aPriority !== bPriority) {
-      return aPriority - bPriority
+      return aPriority - bPriority;
     }
-    return new Date(a.created).getTime() - new Date(b.created).getTime()
-  })
+    return new Date(a.created).getTime() - new Date(b.created).getTime();
+  });
 
-  return specs
+  return specs;
 }
 
 /**
  * Get a single spec by ID
  */
 export function getSpec(cwd: string, id: string): Spec | null {
-  const specs = listSpecs(cwd)
-  return specs.find((s) => s.id === id) ?? null
+  const specs = listSpecs(cwd);
+  return specs.find((s) => s.id === id) ?? null;
 }
 
 /**
  * Get specs by status
  */
 export function getSpecsByStatus(cwd: string, status: SpecStatus): Spec[] {
-  return listSpecs(cwd, { status })
+  return listSpecs(cwd, { status });
 }
 
 /**
  * Create a new spec file
  */
 export function createSpec(cwd: string, data: CreateSpecData): Spec {
-  ensureSpecsDir(cwd)
+  ensureSpecsDir(cwd);
 
-  const now = new Date().toISOString()
-  const id = specFilename(data.title).replace('.md', '')
+  const now = new Date().toISOString();
+  const id = specFilename(data.title).replace('.md', '');
 
   const frontmatter: SpecFrontmatter = {
     id,
@@ -208,36 +208,36 @@ export function createSpec(cwd: string, data: CreateSpecData): Spec {
     priority: data.priority,
     created: now,
     updated: now,
-  }
+  };
 
-  const content = `${serializeFrontmatter(frontmatter)}\n\n${data.content}`
-  const filename = specFilename(data.title)
-  const filepath = path.join(specsDir(cwd), filename)
+  const content = `${serializeFrontmatter(frontmatter)}\n\n${data.content}`;
+  const filename = specFilename(data.title);
+  const filepath = path.join(specsDir(cwd), filename);
 
   // Check if file already exists
   if (fs.existsSync(filepath)) {
-    throw new Error(`Spec file already exists: ${filepath}`)
+    throw new Error(`Spec file already exists: ${filepath}`);
   }
 
-  fs.writeFileSync(filepath, content, 'utf8')
+  fs.writeFileSync(filepath, content, 'utf8');
 
   return {
     ...frontmatter,
     content: data.content,
     filepath,
-  }
+  };
 }
 
 /**
  * Update a spec's status
  */
 export function updateSpecStatus(cwd: string, id: string, status: SpecStatus): Spec | null {
-  const spec = getSpec(cwd, id)
+  const spec = getSpec(cwd, id);
   if (!spec) {
-    return null
+    return null;
   }
 
-  const now = new Date().toISOString()
+  const now = new Date().toISOString();
   const frontmatter: SpecFrontmatter = {
     id: spec.id,
     title: spec.title,
@@ -245,28 +245,28 @@ export function updateSpecStatus(cwd: string, id: string, status: SpecStatus): S
     priority: spec.priority,
     created: spec.created,
     updated: now,
-  }
+  };
 
-  const content = `${serializeFrontmatter(frontmatter)}\n\n${spec.content}`
-  fs.writeFileSync(spec.filepath, content, 'utf8')
+  const content = `${serializeFrontmatter(frontmatter)}\n\n${spec.content}`;
+  fs.writeFileSync(spec.filepath, content, 'utf8');
 
   return {
     ...spec,
     status,
     updated: now,
-  }
+  };
 }
 
 /**
  * Update a spec's content (body)
  */
 export function updateSpecContent(cwd: string, id: string, newContent: string): Spec | null {
-  const spec = getSpec(cwd, id)
+  const spec = getSpec(cwd, id);
   if (!spec) {
-    return null
+    return null;
   }
 
-  const now = new Date().toISOString()
+  const now = new Date().toISOString();
   const frontmatter: SpecFrontmatter = {
     id: spec.id,
     title: spec.title,
@@ -274,48 +274,48 @@ export function updateSpecContent(cwd: string, id: string, newContent: string): 
     priority: spec.priority,
     created: spec.created,
     updated: now,
-  }
+  };
 
-  const content = `${serializeFrontmatter(frontmatter)}\n\n${newContent}`
-  fs.writeFileSync(spec.filepath, content, 'utf8')
+  const content = `${serializeFrontmatter(frontmatter)}\n\n${newContent}`;
+  fs.writeFileSync(spec.filepath, content, 'utf8');
 
   return {
     ...spec,
     content: newContent,
     updated: now,
-  }
+  };
 }
 
 /**
  * Count tasks in a spec (looks for checkbox patterns)
  */
 export function countSpecTasks(content: string): { total: number; completed: number } {
-  const uncheckedPattern = /- \[ \]/g
-  const checkedPattern = /- \[x\]/gi
+  const uncheckedPattern = /- \[ \]/g;
+  const checkedPattern = /- \[x\]/gi;
 
-  const unchecked = content.match(uncheckedPattern)?.length ?? 0
-  const checked = content.match(checkedPattern)?.length ?? 0
+  const unchecked = content.match(uncheckedPattern)?.length ?? 0;
+  const checked = content.match(checkedPattern)?.length ?? 0;
 
   return {
     total: unchecked + checked,
     completed: checked,
-  }
+  };
 }
 
 /**
  * Get spec statistics
  */
 export function getSpecStats(cwd: string): {
-  total: number
-  todo: number
-  inProgress: number
-  done: number
+  total: number;
+  todo: number;
+  inProgress: number;
+  done: number;
 } {
-  const specs = listSpecs(cwd)
+  const specs = listSpecs(cwd);
   return {
     total: specs.length,
     todo: specs.filter((s) => s.status === 'todo').length,
     inProgress: specs.filter((s) => s.status === 'in-progress').length,
     done: specs.filter((s) => s.status === 'done').length,
-  }
+  };
 }
