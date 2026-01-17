@@ -438,9 +438,9 @@ async function runLocalPlanCommand(options: PlanOptions): Promise<void> {
 
   p.intro(chalk.bgGreen.black(" sonata plan --local (specs folder) "));
 
-  // Load config for defaults
-  const config = configExists() ? loadConfig() : null;
-  const specsFolder = config?.local?.specsDir ?? "specs";
+  // Load config for defaults (loadConfig returns sensible defaults if no config file exists)
+  const config = loadConfig();
+  const specsFolder = config.local?.specsDir ?? "specs";
 
   // Check prerequisites
   const s = p.spinner();
