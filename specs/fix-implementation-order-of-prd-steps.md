@@ -8,9 +8,11 @@ updated: 2026-01-17T14:01:29.940Z
 ---
 
 ## Summary
+
 Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished specs to eliminate implicit sequential ordering that conflicts with the 5-tier priority system.
 
 ## Tasks
+
 - [x] Update `buildPlanningPrompt()` in `src/lib/opencode.ts`: change `## Steps` to `## Tasks`, remove numbered format from examples
 - [x] Update `buildLocalPlanningPrompt()` in `src/lib/opencode.ts`: same changes
 - [x] Update `buildImplementationPrompt()` in `src/lib/opencode.ts`: change "step" references to "task" (e.g., "step by step" → "task by task")
@@ -25,6 +27,7 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 - [x] Update `specs/make-setting-model-easier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
 
 ## Files
+
 - `src/lib/opencode.ts`
 - `src/lib/session.ts`
 - `src/lib/specs.ts`
@@ -35,6 +38,7 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 - `specs/make-setting-model-easier.md`
 
 ## Acceptance Criteria
+
 - All planning prompts use `## Tasks` section with descriptive (non-numbered) format
 - Example format is `- [ ] Create database schema for metrics` NOT `- [ ] Step 1: Create database schema`
 - All implementation prompts reference "tasks" not "steps"
@@ -45,7 +49,9 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 - Build passes with no TypeScript errors
 
 ## Reference
+
 - [11 Tips For AI Coding With Ralph Wiggum - Tip 7: Prioritize Risky Tasks](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum)
 
 ## Definition of Done
+
 When all prompts, templates, code, and unfinished specs use "Tasks" terminology, and `npm run build` succeeds.

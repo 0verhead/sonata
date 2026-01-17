@@ -1,10 +1,11 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
-import { ConfigSchema, type Config } from "../types/index.js";
+import * as fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
-const CONFIG_DIR = path.join(os.homedir(), ".sonata");
-const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+import { ConfigSchema, type Config } from '../types/index.js'
+
+const CONFIG_DIR = path.join(os.homedir(), '.sonata')
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 
 /**
  * Default configuration
@@ -16,30 +17,30 @@ export const defaultConfig: Config = {
     viewId: undefined,
     boardName: undefined,
     statusColumn: {
-      todo: "To Do",
-      inProgress: "In Progress",
-      done: "Done",
+      todo: 'To Do',
+      inProgress: 'In Progress',
+      done: 'Done',
     },
   },
   local: {
-    specsDir: "specs",
+    specsDir: 'specs',
   },
   git: {
     createBranch: true,
     createPR: true,
-    baseBranch: "main",
+    baseBranch: 'main',
   },
   loop: {
     maxIterations: 10,
   },
-};
+}
 
 /**
  * Ensure the config directory exists
  */
 function ensureConfigDir(): void {
   if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.mkdirSync(CONFIG_DIR, { recursive: true })
   }
 }
 
@@ -47,7 +48,7 @@ function ensureConfigDir(): void {
  * Check if config file exists
  */
 export function configExists(): boolean {
-  return fs.existsSync(CONFIG_FILE);
+  return fs.existsSync(CONFIG_FILE)
 }
 
 /**
@@ -55,12 +56,12 @@ export function configExists(): boolean {
  */
 export function loadConfig(): Config {
   if (!configExists()) {
-    return { ...defaultConfig };
+    return { ...defaultConfig }
   }
 
   try {
-    const content = fs.readFileSync(CONFIG_FILE, "utf-8");
-    const parsed = JSON.parse(content);
+    const content = fs.readFileSync(CONFIG_FILE, 'utf8')
+    const parsed = JSON.parse(content)
 
     // Merge with defaults first to ensure all fields exist
     const merged = {
@@ -85,19 +86,19 @@ export function loadConfig(): Config {
         ...defaultConfig.loop,
         ...parsed.loop,
       },
-    };
+    }
 
     // Validate with zod
-    const result = ConfigSchema.safeParse(merged);
+    const result = ConfigSchema.safeParse(merged)
     if (result.success) {
-      return result.data;
+      return result.data
     }
 
     // If validation fails, return defaults
-    console.warn("Config validation failed, using defaults:", result.error.message);
-    return { ...defaultConfig };
+    console.warn('Config validation failed, using defaults:', result.error.message)
+    return { ...defaultConfig }
   } catch {
-    return { ...defaultConfig };
+    return { ...defaultConfig }
   }
 }
 
@@ -106,20 +107,20 @@ export function loadConfig(): Config {
  */
 export function saveConfig(config: Config): void {
   // Validate before saving
-  const result = ConfigSchema.safeParse(config);
+  const result = ConfigSchema.safeParse(config)
   if (!result.success) {
-    throw new Error(`Invalid config: ${result.error.message}`);
+    throw new Error(`Invalid config: ${result.error.message}`)
   }
 
-  ensureConfigDir();
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(result.data, null, 2), "utf-8");
+  ensureConfigDir()
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(result.data, null, 2), 'utf8')
 }
 
 /**
  * Update specific config values
  */
 export function updateConfig(updates: Partial<Config>): Config {
-  const current = loadConfig();
+  const current = loadConfig()
 
   const merged = {
     mode: updates.mode ?? current.mode,
@@ -143,35 +144,35 @@ export function updateConfig(updates: Partial<Config>): Config {
       ...current.loop,
       ...updates.loop,
     },
-  };
-
-  // Validate before saving
-  const result = ConfigSchema.safeParse(merged);
-  if (!result.success) {
-    throw new Error(`Invalid config update: ${result.error.message}`);
   }
 
-  saveConfig(result.data);
-  return result.data;
+  // Validate before saving
+  const result = ConfigSchema.safeParse(merged)
+  if (!result.success) {
+    throw new Error(`Invalid config update: ${result.error.message}`)
+  }
+
+  saveConfig(result.data)
+  return result.data
 }
 
 /**
  * Reset config to defaults
  */
 export function resetConfig(): void {
-  saveConfig(defaultConfig);
+  saveConfig(defaultConfig)
 }
 
 /**
  * Get the config directory path
  */
 export function getConfigDir(): string {
-  return CONFIG_DIR;
+  return CONFIG_DIR
 }
 
 /**
  * Get the config file path
  */
 export function getConfigPath(): string {
-  return CONFIG_FILE;
+  return CONFIG_FILE
 }

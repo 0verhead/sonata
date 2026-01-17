@@ -1,17 +1,18 @@
-import type { Config } from "../types/index.js";
-import { specsExist } from "./specs.js";
+import { specsExist } from './specs.js'
+
+import type { Config } from '../types/index.js'
 
 /**
  * Mode type: local specs folder or Notion
  */
-export type Mode = "local" | "notion";
+export type Mode = 'local' | 'notion'
 
 /**
  * Mode flags from CLI
  */
 export interface ModeFlags {
-  local?: boolean;
-  notion?: boolean;
+  local?: boolean
+  notion?: boolean
 }
 
 /**
@@ -19,14 +20,14 @@ export interface ModeFlags {
  */
 export class ModeResolutionError extends Error {
   constructor(message: string) {
-    super(message);
-    this.name = "ModeResolutionError";
+    super(message)
+    this.name = 'ModeResolutionError'
   }
 }
 
 /**
  * Resolve which mode to use based on flags, config, and environment
- * 
+ *
  * Resolution order:
  * 1. If --local flag → use local mode
  * 2. If --notion flag → use Notion mode
@@ -36,86 +37,82 @@ export class ModeResolutionError extends Error {
  * 6. If only Notion configured → use Notion mode
  * 7. Otherwise → throw error (run setup)
  */
-export function resolveMode(
-  flags: ModeFlags,
-  config: Config,
-  cwd: string
-): Mode {
+export function resolveMode(flags: ModeFlags, config: Config, cwd: string): Mode {
   // 1. Explicit flags take priority
   if (flags.local) {
-    return "local";
+    return 'local'
   }
   if (flags.notion) {
-    return "notion";
+    return 'notion'
   }
 
   // 2. Config default
   if (config.mode) {
-    return config.mode;
+    return config.mode
   }
 
   // 3. Auto-detect with conflict check
-  const hasSpecs = specsExist(cwd, config.local?.specsDir);
-  const hasNotion = Boolean(config.notion.boardId);
+  const hasSpecs = specsExist(cwd, config.local?.specsDir)
+  const hasNotion = Boolean(config.notion.boardId)
 
   if (hasSpecs && hasNotion) {
     throw new ModeResolutionError(
-      "Both specs/ folder and Notion are configured. Use --local or --notion flag, or set mode in config."
-    );
+      'Both specs/ folder and Notion are configured. Use --local or --notion flag, or set mode in config.'
+    )
   }
 
   if (hasSpecs) {
-    return "local";
+    return 'local'
   }
 
   if (hasNotion) {
-    return "notion";
+    return 'notion'
   }
 
   throw new ModeResolutionError(
-    "No mode configured. Run `sonata setup` first, or create a specs/ folder."
-  );
+    'No mode configured. Run `sonata setup` first, or create a specs/ folder.'
+  )
 }
 
 /**
  * Check if local mode is available (specs folder exists)
  */
 export function isLocalModeAvailable(cwd: string, specsDir?: string): boolean {
-  return specsExist(cwd, specsDir);
+  return specsExist(cwd, specsDir)
 }
 
 /**
  * Check if Notion mode is available (board configured)
  */
 export function isNotionModeAvailable(config: Config): boolean {
-  return Boolean(config.notion.boardId);
+  return Boolean(config.notion.boardId)
 }
 
 /**
  * Get a description of the current mode state
  */
 export function describeModeState(config: Config, cwd: string): string {
-  const hasSpecs = specsExist(cwd, config.local?.specsDir);
-  const hasNotion = Boolean(config.notion.boardId);
-  const configuredMode = config.mode;
+  const hasSpecs = specsExist(cwd, config.local?.specsDir)
+  const hasNotion = Boolean(config.notion.boardId)
+  const configuredMode = config.mode
 
-  const parts: string[] = [];
+  const parts: string[] = []
 
   if (configuredMode) {
-    parts.push(`Configured mode: ${configuredMode}`);
+    parts.push(`Configured mode: ${configuredMode}`)
   }
 
   if (hasSpecs) {
-    parts.push("Local specs/ folder: present");
+    parts.push('Local specs/ folder: present')
   }
 
   if (hasNotion) {
-    parts.push(`Notion board: ${config.notion.boardName || config.notion.boardId}`);
+    parts.push(`Notion board: ${config.notion.boardName || config.notion.boardId}`)
   }
 
   if (!hasSpecs && !hasNotion && !configuredMode) {
-    parts.push("No mode configured");
+    parts.push('No mode configured')
   }
 
-  return parts.join("\n");
+  return parts.join('\n')
 }

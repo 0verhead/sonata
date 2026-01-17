@@ -8,9 +8,11 @@ updated: 2026-01-17T12:52:34.071Z
 ---
 
 ## Summary
+
 Rename the project from "notion-code" to "sonata" across all source files, configuration, documentation, and user-facing text. This is a clean break with no backward compatibility or migration support.
 
 ## Steps
+
 - [x] Step 1: Update `package.json` - change package name and bin entry to "sonata"
 - [x] Step 2: Update `src/index.ts` - change CLI program name and description
 - [x] Step 3: Update config paths in `src/lib/config.ts`, `src/lib/session.ts`, and `src/lib/opencode.ts` to use `.sonata` directories
@@ -24,6 +26,7 @@ Rename the project from "notion-code" to "sonata" across all source files, confi
 ## Files
 
 **To Modify:**
+
 - `package.json`
 - `src/index.ts`
 - `src/lib/config.ts`
@@ -42,19 +45,23 @@ Rename the project from "notion-code" to "sonata" across all source files, confi
 - `README.md`
 
 **To Delete:**
+
 - `specs/local-mode-feature.md`
 
 **Auto-regenerated:**
+
 - `package-lock.json`
 
 ## Acceptance Criteria
+
 - `sonata --help` displays CLI with "sonata" branding
 - All CLI commands work: `sonata setup`, `sonata plan`, `sonata run`, `sonata loop`, `sonata status`
-- All CLI banners display "sonata" (e.g., ` sonata setup `, ` sonata run --local `)
+- All CLI banners display "sonata" (e.g., `sonata setup`, `sonata run --local`)
 - Config directories are `~/.sonata/` and `.sonata/`
 - README reflects new git URL: `git@github.com:0verhead/sonata.git`
 - No remaining references to "notion-code" in source code or documentation
 - Project builds successfully
 
 ## Definition of Done
+
 All files updated, `grep -r "notion-code" . --include="*.ts" --include="*.md" --include="*.json" | grep -v node_modules | grep -v ".git"` returns no results, and the CLI runs successfully as `sonata`.

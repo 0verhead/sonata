@@ -26,15 +26,18 @@ This is an example task file for sonata. Copy this to your project as `TASKS.md`
 ## Context
 
 ### Tech Stack
+
 - Language: [e.g., TypeScript]
 - Framework: [e.g., React, Next.js]
 - Testing: [e.g., Vitest, Jest]
 
 ### Important Notes
+
 - [Add any important context the AI should know]
 - [External APIs, design constraints, etc.]
 
 ### Acceptance Criteria
+
 - All TypeScript errors must be resolved
 - All tests must pass
 - Code must follow existing patterns in the codebase
