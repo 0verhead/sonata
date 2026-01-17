@@ -10,21 +10,21 @@ updated: 2026-01-17T13:24:15.833Z
 ## Summary
 Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and modern plugins (import sorting, Node.js rules, unicorn), plus pre-commit hooks via Husky and lint-staged that run lint, format, and typecheck. Update sonata's implementation prompts to incorporate the new linting workflow.
 
-## Steps
-- [ ] Step 1: Install ESLint 9 and TypeScript ESLint dependencies (`eslint`, `@eslint/js`, `typescript-eslint`)
-- [ ] Step 2: Install Prettier and eslint-config-prettier (`prettier`, `eslint-config-prettier`)
-- [ ] Step 3: Install additional plugins (`eslint-plugin-import-x`, `eslint-plugin-n`, `eslint-plugin-unicorn`)
-- [ ] Step 4: Create `eslint.config.js` with flat config (TypeScript recommended, Prettier compat, import sorting, Node.js and unicorn rules)
-- [ ] Step 5: Create `.prettierrc` config file (use defaults)
-- [ ] Step 6: Create `.prettierignore` file (dist, node_modules, etc.)
-- [ ] Step 7: Install Husky and lint-staged (`husky`, `lint-staged`)
-- [ ] Step 8: Add lint-staged config to `package.json` (eslint --fix, prettier --write, tsc --noEmit)
-- [ ] Step 9: Update `package.json` scripts (update `lint`, add `lint:fix`, `format`, `format:check`)
-- [ ] Step 10: Initialize Husky and create `.husky/pre-commit` hook
-- [ ] Step 11: Update `buildImplementationPrompt` in `src/lib/opencode.ts` to reference specific lint/format/typecheck commands
-- [ ] Step 12: Update `buildLocalImplementationPrompt` in `src/lib/opencode.ts` with same updates
-- [ ] Step 13: Run linter and fix any existing issues in codebase
-- [ ] Step 14: Test pre-commit hook with a test commit
+## Tasks
+- [ ] Install ESLint 9 and TypeScript ESLint dependencies (`eslint`, `@eslint/js`, `typescript-eslint`)
+- [ ] Install Prettier and eslint-config-prettier (`prettier`, `eslint-config-prettier`)
+- [ ] Install additional plugins (`eslint-plugin-import-x`, `eslint-plugin-n`, `eslint-plugin-unicorn`)
+- [ ] Create `eslint.config.js` with flat config (TypeScript recommended, Prettier compat, import sorting, Node.js and unicorn rules)
+- [ ] Create `.prettierrc` config file (use defaults)
+- [ ] Create `.prettierignore` file (dist, node_modules, etc.)
+- [ ] Install Husky and lint-staged (`husky`, `lint-staged`)
+- [ ] Add lint-staged config to `package.json` (eslint --fix, prettier --write, tsc --noEmit)
+- [ ] Update `package.json` scripts (update `lint`, add `lint:fix`, `format`, `format:check`)
+- [ ] Initialize Husky and create `.husky/pre-commit` hook
+- [ ] Update `buildImplementationPrompt` in `src/lib/opencode.ts` to reference specific lint/format/typecheck commands
+- [ ] Update `buildLocalImplementationPrompt` in `src/lib/opencode.ts` with same updates
+- [ ] Run linter and fix any existing issues in codebase
+- [ ] Test pre-commit hook with a test commit
 
 ## Files
 - `eslint.config.js` (new)
