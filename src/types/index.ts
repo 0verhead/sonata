@@ -19,6 +19,7 @@ export type NotionTask = z.infer<typeof NotionTaskSchema>;
  * User configuration stored in ~/.notion-code/config.json
  */
 export const ConfigSchema = z.object({
+  mode: z.enum(["local", "notion"]).optional(),
   notion: z.object({
     boardId: z.string().optional(),
     viewId: z.string().optional(), // View ID from ?v= parameter in Notion URL
@@ -29,6 +30,11 @@ export const ConfigSchema = z.object({
       done: z.string(),
     }),
   }),
+  local: z
+    .object({
+      specsDir: z.string(),
+    })
+    .optional(),
   git: z.object({
     createBranch: z.boolean(),
     createPR: z.boolean(),

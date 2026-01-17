@@ -22,6 +22,10 @@ export interface Session {
   completedSteps?: number;   // Steps marked complete
   // OpenCode session continuity (for future use)
   opencodeSessionId?: string; // Track opencode session for --continue flag
+  // Local mode fields
+  isLocal?: boolean;         // true when using local specs
+  specId?: string;           // ID from spec frontmatter
+  specFilepath?: string;     // Path to spec file
 }
 
 /**

@@ -10,6 +10,7 @@ const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
  * Default configuration
  */
 export const defaultConfig: Config = {
+  mode: undefined, // no default, auto-detect
   notion: {
     boardId: undefined,
     viewId: undefined,
@@ -19,6 +20,9 @@ export const defaultConfig: Config = {
       inProgress: "In Progress",
       done: "Done",
     },
+  },
+  local: {
+    specsDir: "specs",
   },
   git: {
     createBranch: true,
@@ -60,6 +64,7 @@ export function loadConfig(): Config {
 
     // Merge with defaults first to ensure all fields exist
     const merged = {
+      mode: parsed.mode ?? defaultConfig.mode,
       notion: {
         ...defaultConfig.notion,
         ...parsed.notion,
@@ -67,6 +72,10 @@ export function loadConfig(): Config {
           ...defaultConfig.notion.statusColumn,
           ...parsed.notion?.statusColumn,
         },
+      },
+      local: {
+        ...defaultConfig.local,
+        ...parsed.local,
       },
       git: {
         ...defaultConfig.git,
@@ -113,6 +122,7 @@ export function updateConfig(updates: Partial<Config>): Config {
   const current = loadConfig();
 
   const merged = {
+    mode: updates.mode ?? current.mode,
     notion: {
       ...current.notion,
       ...updates.notion,
@@ -120,6 +130,10 @@ export function updateConfig(updates: Partial<Config>): Config {
         ...current.notion.statusColumn,
         ...updates.notion?.statusColumn,
       },
+    },
+    local: {
+      ...current.local,
+      ...updates.local,
     },
     git: {
       ...current.git,
