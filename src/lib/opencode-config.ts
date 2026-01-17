@@ -148,3 +148,53 @@ export function isNotionMcpConfigured(cwd: string = process.cwd()): boolean {
 
   return notion.type === 'remote' && notion.url === 'https://mcp.notion.com/mcp';
 }
+
+/**
+ * Get the currently configured model from opencode.json
+ * Returns undefined if no model is set
+ */
+export function getModel(cwd: string = process.cwd()): string | undefined {
+  const config = loadOpenCodeConfig(cwd);
+  return config.model;
+}
+
+/**
+ * Set the model in opencode.json
+ * Creates the config file if it doesn't exist
+ */
+export function setModel(model: string, cwd: string = process.cwd()): void {
+  const config = loadOpenCodeConfig(cwd);
+  config.model = model;
+
+  // Ensure schema is set
+  if (!config.$schema) {
+    config.$schema = 'https://opencode.ai/config.json';
+  }
+
+  saveOpenCodeConfig(config, cwd);
+}
+
+/**
+ * Get the currently configured reasoning effort from opencode.json
+ * Returns undefined if no reasoning effort is set
+ */
+export function getReasoningEffort(cwd: string = process.cwd()): ReasoningEffort | undefined {
+  const config = loadOpenCodeConfig(cwd);
+  return config.reasoningEffort;
+}
+
+/**
+ * Set the reasoning effort in opencode.json
+ * Creates the config file if it doesn't exist
+ */
+export function setReasoningEffort(effort: ReasoningEffort, cwd: string = process.cwd()): void {
+  const config = loadOpenCodeConfig(cwd);
+  config.reasoningEffort = effort;
+
+  // Ensure schema is set
+  if (!config.$schema) {
+    config.$schema = 'https://opencode.ai/config.json';
+  }
+
+  saveOpenCodeConfig(config, cwd);
+}
