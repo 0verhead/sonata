@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-const SESSION_DIR = ".notion-code";
+const SESSION_DIR = ".sonata";
 const SESSION_FILE = "session.json";
 
 /**
