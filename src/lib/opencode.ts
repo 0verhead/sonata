@@ -401,13 +401,21 @@ Brief description of what this spec accomplishes.
 When X, Y, and Z are complete and tests pass.
 \`\`\`
 
+6. **COMMIT AND PUSH** the spec file after saving:
+   - Stage the spec file: \`git add ${specsDir}/<slug>.md\`
+   - Commit with a descriptive message: \`git commit -m "docs: add spec for <title>"\`
+   - Push to the remote branch: \`git push\`
+   - **IMPORTANT:** If push fails (no remote configured, authentication issues, etc.), show a warning message but continue - do NOT treat this as an error. The spec is still saved locally and can be pushed later.
+
 ## IMPORTANT REMINDERS
 
 - This is an **interactive session** - ask questions, don't assume
 - When the developer says something like "approve", "looks good, save it", "lgtm", or "create the spec":
   → Immediately write the spec file to ${specsDir}/<slug>.md
-- After saving, confirm with this EXACT message: "Spec saved to ${specsDir}/! You can now exit and run \`sonata run --local\` to start implementation."
+  → Then commit and push the spec file (warn but don't fail if push fails)
+- After saving and committing, confirm with this EXACT message: "Spec saved to ${specsDir}/ and committed! You can now exit and run \`sonata run --local\` to start implementation."
    (NOTE: The command is \`sonata run --local\`, NOT \`opencode run\`)
+- If push failed, add: "(Note: Push to remote failed - you may need to push manually later)"
 - If you're unsure whether to save, ask: "Would you like me to save this spec now?"
 `.trim();
 }

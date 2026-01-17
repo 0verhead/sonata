@@ -1,10 +1,10 @@
 ---
 id: fix-spec-prd-update-not-committed-and-pushed
 title: fix spec prd update is not commited and pushed to remote pr branch
-status: todo
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T00:00:00.000Z
+updated: 2026-01-17T16:43:31.824Z
 ---
 
 ## Summary
@@ -13,9 +13,9 @@ Update the local planning prompt to instruct OpenCode to commit and push the spe
 
 ## Tasks
 
-- [ ] Update `buildLocalPlanningPrompt` in `src/lib/opencode.ts` to add commit/push instructions after the spec file is saved
-- [ ] Include guidance to warn (not fail) if push fails (e.g., no remote configured)
-- [ ] Test the flow: `sonata plan --local` → approve spec → verify commit and push happen
+- [x] Update `buildLocalPlanningPrompt` in `src/lib/opencode.ts` to add commit/push instructions after the spec file is saved
+- [x] Include guidance to warn (not fail) if push fails (e.g., no remote configured)
+- [x] Test the flow: `sonata plan --local` → approve spec → verify commit and push happen
 
 ## Files
 
