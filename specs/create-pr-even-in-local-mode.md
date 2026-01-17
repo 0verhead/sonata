@@ -4,7 +4,7 @@ title: Create PR even in local mode
 status: in-progress
 priority: high
 created: 2026-01-17T10:00:00Z
-updated: 2026-01-17T14:15:00.000Z
+updated: 2026-01-17T14:30:00.000Z
 ---
 
 ## Summary
@@ -14,7 +14,7 @@ Fix the bug where PR creation (and branch creation) is silently skipped in local
 - [x] Step 1: In `src/commands/run.ts`, change line 521 from `const config = configExists() ? loadConfig() : null;` to `const config = loadConfig();`
 - [x] Step 2: In `src/commands/run.ts`, remove the `?` optional chaining on `config` in the local mode function (since config is now guaranteed non-null)
 - [x] Step 3: In `src/commands/loop.ts`, change line 539 from `const config = configExists() ? loadConfig() : null;` to `const config = loadConfig();`
-- [ ] Step 4: In `src/commands/loop.ts`, remove the `?` optional chaining on `config` in the local loop function
+- [x] Step 4: In `src/commands/loop.ts`, remove the `?` optional chaining on `config` in the local loop function
 - [ ] Step 5: In `src/commands/plan.ts`, change line 442 from `const config = configExists() ? loadConfig() : null;` to `const config = loadConfig();` (for consistency)
 - [ ] Step 6: Update type annotations if needed (config changes from `Config | null` to `Config`)
 - [ ] Step 7: Test local mode PR creation: run `sonata run --local` without setup, verify PR is offered upon completion

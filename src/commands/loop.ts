@@ -603,7 +603,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
 
   // Create git branch if needed
   let branch = "";
-  if (inGitRepo && config?.git.createBranch) {
+  if (inGitRepo && config.git.createBranch) {
     const currentBranch = await getCurrentBranch(cwd);
     if (currentBranch === config.git.baseBranch) {
       const safeBranchName = selectedSpec.title
@@ -732,7 +732,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
       updateSpecStatus(cwd, selectedSpec.id, "done");
 
       // Create PR
-      if (inGitRepo && config?.git.createPR && branch !== config.git.baseBranch) {
+      if (inGitRepo && config.git.createPR && branch !== config.git.baseBranch) {
         s.start("Creating pull request...");
         try {
           const prTitle = selectedSpec.title;
