@@ -4,15 +4,17 @@ title: Add sota eslint with eslint-prettier
 status: in-progress
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T14:30:00.000Z
+updated: 2026-01-17T14:35:00.000Z
 ---
 
 ## Summary
+
 Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and modern plugins (import sorting, Node.js rules, unicorn), plus pre-commit hooks via Husky and lint-staged that run lint, format, and typecheck. Update sonata's implementation prompts to incorporate the new linting workflow.
 
 ## Tasks
+
 - [x] Install ESLint 9 and TypeScript ESLint dependencies (`eslint`, `@eslint/js`, `typescript-eslint`)
-- [ ] Install Prettier and eslint-config-prettier (`prettier`, `eslint-config-prettier`)
+- [x] Install Prettier and eslint-config-prettier (`prettier`, `eslint-config-prettier`)
 - [ ] Install additional plugins (`eslint-plugin-import-x`, `eslint-plugin-n`, `eslint-plugin-unicorn`)
 - [ ] Create `eslint.config.js` with flat config (TypeScript recommended, Prettier compat, import sorting, Node.js and unicorn rules)
 - [ ] Create `.prettierrc` config file (use defaults)
@@ -27,6 +29,7 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - [ ] Test pre-commit hook with a test commit
 
 ## Files
+
 - `eslint.config.js` (new)
 - `.prettierrc` (new)
 - `.prettierignore` (new)
@@ -36,6 +39,7 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - `src/**/*.ts` (potential lint/format fixes)
 
 ## Acceptance Criteria
+
 - `npm run lint` passes with no errors
 - `npm run format:check` passes with no errors
 - `npm run typecheck` passes with no errors
@@ -46,4 +50,5 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - Sonata implementation prompts reference specific lint/format/typecheck commands
 
 ## Definition of Done
+
 When ESLint, Prettier, and pre-commit hooks are fully configured, all existing code passes linting/formatting/typecheck, a test commit triggers pre-commit validation successfully, and the sonata prompts are updated to guide AI to run the new feedback loop commands.
