@@ -1,11 +1,11 @@
 {
-  "name": "notion-code",
+  "name": "sonata",
   "version": "0.1.0",
   "description": "CLI tool that implements the Ralph loop pattern using OpenCode and Notion kanban boards",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "notion-code": "./dist/index.js"
+    "sonata": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup",
