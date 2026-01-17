@@ -103,12 +103,21 @@ This is a one-time setup to connect GitHub CLI to your account.`,
   }
 
   let boardId: string | undefined;
+  let viewId: string | undefined;
   let boardName: string | undefined;
 
   if (useNotion === true) {
+    p.note(
+      "Your Notion board URL looks like:\n" +
+      "https://notion.so/workspace/62b46288e10f4c4abc4bd271e17ad796?v=256a0340...\n\n" +
+      "The board ID is: 62b46288e10f4c4abc4bd271e17ad796\n" +
+      "The view ID is: 256a0340... (after ?v=)",
+      "Notion URL Format"
+    );
+
     const boardIdResult = await p.text({
       message: "Notion board/database ID (from the URL):",
-      placeholder: "abc123...",
+      placeholder: "62b46288e10f4c4abc4bd271e17ad796",
       initialValue: existingConfig.notion.boardId ?? "",
       validate: (value) => {
         if (!value) return "Board ID is required";
@@ -123,6 +132,21 @@ This is a one-time setup to connect GitHub CLI to your account.`,
 
     if (isNonEmptyString(boardIdResult)) {
       boardId = boardIdResult;
+    }
+
+    const viewIdResult = await p.text({
+      message: "View ID (optional, from ?v= in URL):",
+      placeholder: "256a03406f158055834a000c9c73da80",
+      initialValue: existingConfig.notion.viewId ?? "",
+    });
+
+    if (isCancelled(viewIdResult)) {
+      p.cancel("Setup cancelled");
+      process.exit(0);
+    }
+
+    if (isNonEmptyString(viewIdResult)) {
+      viewId = viewIdResult;
     }
 
     const boardNameResult = await p.text({
@@ -245,6 +269,7 @@ This is a one-time setup to connect GitHub CLI to your account.`,
   const config: Config = {
     notion: {
       boardId,
+      viewId,
       boardName,
       statusColumn: statusColumns,
     },

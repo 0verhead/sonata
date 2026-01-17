@@ -21,6 +21,7 @@ export type NotionTask = z.infer<typeof NotionTaskSchema>;
 export const ConfigSchema = z.object({
   notion: z.object({
     boardId: z.string().optional(),
+    viewId: z.string().optional(), // View ID from ?v= parameter in Notion URL
     boardName: z.string().optional(),
     statusColumn: z.object({
       todo: z.string(),

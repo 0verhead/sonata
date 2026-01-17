@@ -12,6 +12,7 @@ const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 export const defaultConfig: Config = {
   notion: {
     boardId: undefined,
+    viewId: undefined,
     boardName: undefined,
     statusColumn: {
       todo: "To Do",
