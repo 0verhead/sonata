@@ -48,7 +48,7 @@ import {
   getSpec,
   getSpecsByStatus,
   updateSpecStatus,
-  countSpecSteps,
+  countSpecTasks,
 } from "../lib/specs.js";
 import type { Spec } from "../types/specs.js";
 
@@ -627,14 +627,14 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
     progressFile: "progress.txt",
   });
 
-  // Get step counts
-  const steps = countSpecSteps(selectedSpec.content);
+  // Get task counts
+  const tasks = countSpecTasks(selectedSpec.content);
 
   // Show what we're about to do
   p.note(
     `Spec: ${selectedSpec.title}\n` +
     `File: ${selectedSpec.filepath}\n` +
-    `Steps: ${steps.completed}/${steps.total} complete\n` +
+    `Tasks: ${tasks.completed}/${tasks.total} complete\n` +
     `Iteration: ${iteration}`,
     "Implementing Spec"
   );
@@ -642,7 +642,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   // Confirm before running (skip if --yes flag)
   if (!yes) {
     const proceed = await p.confirm({
-      message: "Ready to implement one step?",
+      message: "Ready to implement one task?",
       initialValue: true,
     });
 

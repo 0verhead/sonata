@@ -45,7 +45,7 @@ import {
   getSpec,
   getSpecsByStatus,
   updateSpecStatus,
-  countSpecSteps,
+  countSpecTasks,
 } from "../lib/specs.js";
 
 interface LoopOptions {
@@ -642,18 +642,18 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     p.log.info("Initialized progress.txt");
   }
 
-  // Get initial step counts
-  let steps = countSpecSteps(selectedSpec.content);
+  // Get initial task counts
+  let tasks = countSpecTasks(selectedSpec.content);
 
   // Confirm before starting AFK mode
   if (!hitl) {
     p.note(
       `Spec: ${selectedSpec.title}\n` +
-      `Steps: ${steps.completed}/${steps.total} complete\n` +
+      `Tasks: ${tasks.completed}/${tasks.total} complete\n` +
       `Max iterations: ${iterations}\n` +
       `Branch: ${branch || "N/A"}\n\n` +
       "The loop will run autonomously until:\n" +
-      "- All spec steps are complete\n" +
+      "- All spec tasks are complete\n" +
       "- Max iterations reached\n" +
       "- An error occurs",
       "AFK Mode"
@@ -678,7 +678,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
   for (let i = 1; i <= iterations; i++) {
     // Refresh spec to get latest content
     selectedSpec = getSpec(cwd, selectedSpec.id)!;
-    steps = countSpecSteps(selectedSpec.content);
+    tasks = countSpecTasks(selectedSpec.content);
 
     const currentIteration = startIteration + i;
 
