@@ -111,18 +111,18 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   const modeLabel = hitl ? "HITL" : "AFK";
   p.intro(
     chalk.bgMagenta.white(
-      ` notion-code loop (${modeLabel} mode, max ${iterations} iterations) `
+      ` sonata loop (${modeLabel} mode, max ${iterations} iterations) `
     )
   );
 
   // Check if Notion is configured
   if (!configExists()) {
-    p.cancel("No configuration found. Run `notion-code setup` first.");
+    p.cancel("No configuration found. Run `sonata setup` first.");
     process.exit(1);
   }
 
   if (!config.notion.boardId) {
-    p.cancel("Notion board not configured. Run `notion-code setup` first.");
+    p.cancel("Notion board not configured. Run `sonata setup` first.");
     process.exit(1);
   }
 
@@ -162,7 +162,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     s.stop(prd ? "PRD fetched" : "No PRD found");
     
     if (!prd) {
-      p.cancel("Ticket has no PRD. Run `notion-code plan --ticket <id>` first.");
+      p.cancel("Ticket has no PRD. Run `sonata plan --ticket <id>` first.");
       process.exit(1);
     }
     
@@ -215,10 +215,10 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     } else {
       p.note(
         "This ticket doesn't have a PRD yet.\n" +
-        "Run `notion-code plan` to create one first.",
+        "Run `sonata plan` to create one first.",
         "No PRD Found"
       );
-      p.outro("Create a PRD with `notion-code plan`");
+      p.outro("Create a PRD with `sonata plan`");
       return;
     }
   } else {
@@ -247,10 +247,10 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     if (readyTickets.length === 0) {
       p.note(
         "No tickets have PRDs yet.\n" +
-        "Run `notion-code plan` to create a PRD for a ticket first.",
+        "Run `sonata plan` to create a PRD for a ticket first.",
         "No Ready Tickets"
       );
-      p.outro("Create a PRD with `notion-code plan`");
+      p.outro("Create a PRD with `sonata plan`");
       return;
     }
 
@@ -488,7 +488,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
           const prTitle = session!.ticketTitle;
           const prUrl = await createPR(
             prTitle,
-            `Completed via notion-code Ralph loop\n\nIterations: ${i}\nSee progress.txt for details.`,
+            `Completed via sonata Ralph loop\n\nIterations: ${i}\nSee progress.txt for details.`,
             config.git.baseBranch,
             cwd
           );
@@ -517,8 +517,8 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   p.log.warn(`Max iterations (${iterations}) reached`);
   p.note(
     "The PRD is not yet complete. You can:\n" +
-      "- Run `notion-code loop` again to continue\n" +
-      "- Run `notion-code run` for manual control\n" +
+      "- Run `sonata loop` again to continue\n" +
+      "- Run `sonata run` for manual control\n" +
       "- Check progress.txt for current state",
     "Max Iterations Reached"
   );
@@ -541,7 +541,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
   const modeLabel = hitl ? "HITL" : "AFK";
   p.intro(
     chalk.bgGreen.white(
-      ` notion-code loop --local (${modeLabel} mode, max ${iterations} iterations) `
+      ` sonata loop --local (${modeLabel} mode, max ${iterations} iterations) `
     )
   );
 
@@ -569,10 +569,10 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
   if (availableSpecs.length === 0) {
     p.note(
       "No specs found in todo or in-progress status.\n" +
-      "Run `notion-code plan --local` to create a spec first.",
+      "Run `sonata plan --local` to create a spec first.",
       "No Ready Specs"
     );
-    p.outro("Create a spec with `notion-code plan --local`");
+    p.outro("Create a spec with `sonata plan --local`");
     return;
   }
 
@@ -738,7 +738,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
           const prTitle = selectedSpec.title;
           const prUrl = await createPR(
             prTitle,
-            `Completed via notion-code Ralph loop (local mode)\n\nIterations: ${i}\nSee progress.txt for details.`,
+            `Completed via sonata Ralph loop (local mode)\n\nIterations: ${i}\nSee progress.txt for details.`,
             config.git.baseBranch,
             cwd
           );
@@ -767,8 +767,8 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
   p.log.warn(`Max iterations (${iterations}) reached`);
   p.note(
     "The spec is not yet complete. You can:\n" +
-    "- Run `notion-code loop --local` again to continue\n" +
-    "- Run `notion-code run --local` for manual control\n" +
+    "- Run `sonata loop --local` again to continue\n" +
+    "- Run `sonata run --local` for manual control\n" +
     "- Check progress.txt for current state",
     "Max Iterations Reached"
   );
