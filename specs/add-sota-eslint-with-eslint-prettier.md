@@ -4,7 +4,7 @@ title: Add sota eslint with eslint-prettier
 status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T15:45:00.000Z
+updated: 2026-01-17T14:38:15.556Z
 ---
 
 ## Summary
