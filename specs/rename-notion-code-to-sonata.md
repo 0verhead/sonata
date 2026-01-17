@@ -4,7 +4,7 @@ title: Rename notion-code to sonata
 status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T21:00:00.000Z
+updated: 2026-01-17T12:52:34.071Z
 ---
 
 ## Summary
