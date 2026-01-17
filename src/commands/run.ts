@@ -61,12 +61,12 @@ interface RunOptions {
 }
 
 /**
- * Run command - implement one PRD step
+ * Run command - implement one PRD task
  *
  * True Ralph pattern:
  * - Only works on tickets that have a completed PRD
- * - AI autonomously implements steps from the PRD
- * - One step per iteration, AI chooses priority
+ * - AI autonomously implements tasks from the PRD
+ * - One task per iteration, AI chooses priority
  */
 export async function runCommand(options: RunOptions = {}): Promise<void> {
   const { cwd = process.cwd(), yes = false, ticketId: directTicketId, local, notion } = options;
@@ -437,7 +437,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   }
 
   if (result.isComplete) {
-    p.log.success("All PRD steps complete!");
+    p.log.success("All PRD tasks complete!");
     markProgressComplete(cwd);
 
     // Update ticket status to "Done"
@@ -491,7 +491,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     // Clear session
     clearSession(cwd);
   } else {
-    p.log.info("Step complete. Task not yet finished.");
+    p.log.info("Task complete. Spec not yet finished.");
     p.note(
       "Run `sonata run` again to continue, or\n" +
       "`sonata loop` for autonomous mode.",
@@ -673,7 +673,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   }
 
   if (result.isComplete) {
-    p.log.success("All spec steps complete!");
+    p.log.success("All spec tasks complete!");
     markProgressComplete(cwd);
 
     // Update spec status to done
@@ -723,7 +723,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
     // Clear session
     clearSession(cwd);
   } else {
-    p.log.info("Step complete. Spec not yet finished.");
+    p.log.info("Task complete. Spec not yet finished.");
     p.note(
       "Run `sonata run --local` again to continue, or\n" +
       "`sonata loop --local` for autonomous mode.",

@@ -58,12 +58,12 @@ interface LoopOptions {
 }
 
 /**
- * Loop command - implement multiple PRD steps autonomously
+ * Loop command - implement multiple PRD tasks autonomously
  *
  * True Ralph pattern:
  * - Only works on tickets that have a completed PRD
  * - Executes multiple iterations autonomously up to a max limit
- * - One step per iteration
+ * - One task per iteration
  */
 export async function loopCommand(options: LoopOptions = {}): Promise<void> {
   const { local, notion } = options;
@@ -470,7 +470,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
     // Check for completion
     if (result.isComplete) {
       console.log();
-      p.log.success(chalk.green.bold("All PRD steps complete!"));
+      p.log.success(chalk.green.bold("All PRD tasks complete!"));
       markProgressComplete(cwd);
 
       // Update ticket status to "Done"
@@ -725,7 +725,7 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     // Check for completion
     if (result.isComplete) {
       console.log();
-      p.log.success(chalk.green.bold("All spec steps complete!"));
+      p.log.success(chalk.green.bold("All spec tasks complete!"));
       markProgressComplete(cwd);
 
       // Update spec status to done

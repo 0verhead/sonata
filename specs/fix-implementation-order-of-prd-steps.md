@@ -4,7 +4,7 @@ title: Fix implementation order of prd steps
 status: in-progress
 priority: high
 created: 2026-01-17T15:00:00.000Z
-updated: 2026-01-17T19:00:00.000Z
+updated: 2026-01-17T20:00:00.000Z
 ---
 
 ## Summary
@@ -19,8 +19,8 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 - [x] Rename `countPrdSteps()` to `countPrdTasks()` in `src/lib/session.ts`
 - [x] Update Session interface in `src/lib/session.ts`: `totalSteps` → `totalTasks`, `completedSteps` → `completedTasks`
 - [x] Rename `countSpecSteps()` to `countSpecTasks()` in `src/lib/specs.ts`
-- [ ] Update all references in `src/commands/run.ts`: function calls, variable names, user-facing messages
-- [ ] Update all references in `src/commands/loop.ts`: function calls, variable names, user-facing messages
+- [x] Update all references in `src/commands/run.ts`: function calls, variable names, user-facing messages
+- [x] Update all references in `src/commands/loop.ts`: function calls, variable names, user-facing messages
 - [ ] Update `specs/add-sota-eslint-with-eslint-prettier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
 - [ ] Update `specs/make-setting-model-easier.md`: change `## Steps` to `## Tasks`, remove numbered prefixes
 
