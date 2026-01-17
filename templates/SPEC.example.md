@@ -11,7 +11,7 @@ updated: 2025-01-17T10:00:00Z
 
 Implement user authentication with login/logout functionality.
 
-## Steps
+## Tasks
 
 - [ ] Create auth context and provider
 - [ ] Build login form component
@@ -33,4 +33,4 @@ Implement user authentication with login/logout functionality.
 
 ## Definition of Done
 
-All steps complete, tests passing, no TypeScript errors.
+All tasks complete, tests passing, no TypeScript errors.
