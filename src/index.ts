@@ -2,6 +2,7 @@ import { Command } from 'commander';
 
 import { cleanCommand } from './commands/clean.js';
 import { loopCommand } from './commands/loop.js';
+import { modelCommand } from './commands/model.js';
 import { planCommand } from './commands/plan.js';
 import { runCommand } from './commands/run.js';
 import { setupCommand } from './commands/setup.js';
@@ -105,6 +106,19 @@ program
     await cleanCommand({
       cwd: options.dir,
       yes: options.yes,
+    });
+  });
+
+// Model command
+program
+  .command('model [action] [arg]')
+  .description('View, list, or set the AI model and reasoning effort')
+  .option('-d, --dir <directory>', 'Working directory', process.cwd())
+  .option('--effort <level>', 'Reasoning effort level (low, medium, high, xhigh)')
+  .action(async (action, arg, options) => {
+    await modelCommand(action, arg, {
+      cwd: options.dir,
+      effort: options.effort,
     });
   });
 

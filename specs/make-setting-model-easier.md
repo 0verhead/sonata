@@ -1,10 +1,10 @@
 ---
 id: make-setting-model-easier
 title: Make settings the used model in opencode easier
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T14:30:00Z
-updated: 2026-01-17T18:30:00.000Z
+updated: 2026-01-17T19:00:00.000Z
 ---
 
 ## Summary
@@ -23,7 +23,7 @@ Add a `sonata model` command to easily view, search, and set the default AI mode
 - [x] Implement `sonata model set <model>` - set model directly via CLI arg
 - [x] Implement `sonata model set` (interactive) - use `@inquirer/search` for searchable model picker
 - [x] Implement `--effort <level>` flag (low/medium/high/xhigh) to set reasoning effort
-- [ ] Register the command in `src/index.ts`
+- [x] Register the command in `src/index.ts`
 
 ## Files
 
