@@ -517,8 +517,8 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
 
   p.intro(chalk.bgGreen.white(" sonata run --local "));
 
-  // Load config for defaults
-  const config = configExists() ? loadConfig() : null;
+  // Load config for defaults (loadConfig() returns sensible defaults if no config file exists)
+  const config = loadConfig();
 
   // Check prerequisites
   const s = p.spinner();
