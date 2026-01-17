@@ -8,6 +8,7 @@ import {
 } from "../lib/opencode.js";
 import {
   fetchTicketsViaMcp,
+  fetchMoreTicketsViaMcp,
   checkTicketHasPrd,
   type TicketInfo,
 } from "../lib/notion-via-opencode.js";
@@ -122,50 +123,111 @@ export async function planCommand(options: PlanOptions = {}): Promise<void> {
     }
   }
 
-  // Fetch tickets from Notion
-  s.start("Fetching tickets from Notion...");
+  // Handle --ticket flag: skip fetching and use directly
+  let selectedTicket: TicketInfo;
+  
+  if (options.ticketId) {
+    // Direct ticket ID provided - use it without fetching all tickets
+    const ticketId = options.ticketId;
+    p.log.info(`Using ticket: ${ticketId}`);
+    
+    selectedTicket = {
+      id: ticketId,
+      title: `Ticket ${ticketId.slice(0, 8)}...`, // Placeholder, will be fetched by opencode
+      status: config.notion.statusColumn.todo,
+      url: `https://notion.so/${ticketId.replace(/-/g, "")}`,
+      hasPrd: false,
+    };
+  } else {
+    // Fetch tickets from Notion
+    s.start("Fetching tickets from Notion...");
 
-  let tickets: TicketInfo[];
-  try {
-    tickets = await fetchTicketsViaMcp(
-      config.notion.boardId,
-      config.notion.statusColumn,
-      cwd
-    );
-  } catch (err) {
-    s.stop("Failed to fetch tickets");
-    p.log.error(`Error: ${err}`);
-    process.exit(1);
-  }
+    let tickets: TicketInfo[];
+    try {
+      tickets = await fetchTicketsViaMcp(
+        config.notion.boardId,
+        config.notion.statusColumn,
+        cwd,
+        false, // includeInProgress
+        config.notion.viewId
+      );
+    } catch (err) {
+      s.stop("Failed to fetch tickets");
+      p.log.error(`Error: ${err}`);
+      process.exit(1);
+    }
 
-  s.stop(`Found ${tickets.length} tickets in "${config.notion.statusColumn.todo}" status`);
+    s.stop(`Found ${tickets.length} tickets in "${config.notion.statusColumn.todo}" status`);
 
-  if (tickets.length === 0) {
-    p.cancel(`No tickets found in "${config.notion.statusColumn.todo}" status.`);
-    process.exit(0);
-  }
+    if (tickets.length === 0) {
+      p.cancel(`No tickets found in "${config.notion.statusColumn.todo}" status.`);
+      process.exit(0);
+    }
 
-  // Let user select a ticket
-  const ticketOptions = tickets.map(t => ({
-    value: t.id,
-    label: t.title,
-    hint: t.url,
-  }));
+    // Let user select a ticket or search for more
+    let selectedTicketId: string | symbol | undefined;
+    
+    while (!selectedTicketId) {
+      const ticketOptions = [
+        ...tickets.map(t => ({
+          value: t.id,
+          label: t.title,
+          hint: t.url,
+        })),
+        { value: "__MORE__", label: "🔍 Search for more tickets...", hint: "If you don't see all tickets" },
+      ];
 
-  const selectedTicketId = options.ticketId ?? await p.select({
-    message: "Select a ticket to plan:",
-    options: ticketOptions,
-  });
+      const selection = await p.select({
+        message: `Select a ticket to plan (${tickets.length} found):`,
+        options: ticketOptions,
+      });
 
-  if (isCancelled(selectedTicketId)) {
-    p.cancel("Cancelled");
-    process.exit(0);
-  }
+      if (isCancelled(selection)) {
+        p.cancel("Cancelled");
+        process.exit(0);
+      }
 
-  const selectedTicket = tickets.find(t => t.id === selectedTicketId);
-  if (!selectedTicket) {
-    p.cancel("Ticket not found");
-    process.exit(1);
+      if (selection === "__MORE__") {
+        // Fetch more tickets with a broader search
+        s.start("Searching for more tickets...");
+        try {
+          const moreTickets = await fetchMoreTicketsViaMcp(
+            config.notion.boardId!,
+            config.notion.statusColumn,
+            cwd,
+            tickets.map(t => t.id), // Exclude already found
+            config.notion.viewId
+          );
+          
+          if (moreTickets.length > 0) {
+            // Add new tickets to the list (deduplicate)
+            const existingIds = new Set(tickets.map(t => t.id));
+            for (const ticket of moreTickets) {
+              if (!existingIds.has(ticket.id)) {
+                tickets.push(ticket);
+                existingIds.add(ticket.id);
+              }
+            }
+            s.stop(`Found ${moreTickets.length} additional tickets (${tickets.length} total)`);
+          } else {
+            s.stop("No additional tickets found");
+          }
+        } catch (err) {
+          s.stop("Search failed");
+          p.log.warn(`Could not search for more: ${err}`);
+        }
+        continue; // Show selection again with updated list
+      }
+
+      selectedTicketId = selection;
+    }
+
+    const found = tickets.find(t => t.id === selectedTicketId);
+    if (!found) {
+      p.cancel("Ticket not found");
+      process.exit(1);
+    }
+    selectedTicket = found;
   }
 
   // Create git branch if needed
