@@ -4,7 +4,7 @@ title: Fix implementation order of prd steps
 status: in-progress
 priority: high
 created: 2026-01-17T15:00:00.000Z
-updated: 2026-01-17T18:00:00.000Z
+updated: 2026-01-17T19:00:00.000Z
 ---
 
 ## Summary
@@ -13,8 +13,8 @@ Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished 
 ## Tasks
 - [x] Update `buildPlanningPrompt()` in `src/lib/opencode.ts`: change `## Steps` to `## Tasks`, remove numbered format from examples
 - [x] Update `buildLocalPlanningPrompt()` in `src/lib/opencode.ts`: same changes
-- [ ] Update `buildImplementationPrompt()` in `src/lib/opencode.ts`: change "step" references to "task" (e.g., "step by step" → "task by task")
-- [ ] Update `buildLocalImplementationPrompt()` in `src/lib/opencode.ts`: same wording changes
+- [x] Update `buildImplementationPrompt()` in `src/lib/opencode.ts`: change "step" references to "task" (e.g., "step by step" → "task by task")
+- [x] Update `buildLocalImplementationPrompt()` in `src/lib/opencode.ts`: same wording changes
 - [ ] Update `templates/SPEC.example.md`: change `## Steps` to `## Tasks`, use descriptive task names
 - [x] Rename `countPrdSteps()` to `countPrdTasks()` in `src/lib/session.ts`
 - [x] Update Session interface in `src/lib/session.ts`: `totalSteps` → `totalTasks`, `completedSteps` → `completedTasks`
