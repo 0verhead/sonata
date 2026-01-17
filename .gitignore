@@ -27,3 +27,5 @@ coverage/
 
 # Progress file (generated during runs)
 progress.txt
+
+opencode.json
