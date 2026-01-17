@@ -32,7 +32,7 @@ import {
   hasActiveSession,
   incrementIteration,
   updateSessionPrd,
-  countPrdSteps,
+  countPrdTasks,
   clearSession,
   initSession,
 } from "../lib/session.js";
@@ -169,11 +169,11 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
       branch,
     });
     
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
     
     session = loadCurrentSession(cwd);
@@ -194,17 +194,17 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     s.stop(prd ? "PRD fetched" : "No PRD found");
 
     if (prd) {
-      const steps = countPrdSteps(prd.content);
+      const tasks = countPrdTasks(prd.content);
       updateSessionPrd(cwd, {
         prdPageId: prd.pageId,
         prdContent: prd.content,
-        totalSteps: steps.total,
+        totalTasks: tasks.total,
       });
       prdContent = prd.content;
       session = loadCurrentSession(cwd);
       
-      if (session?.totalSteps && session.completedSteps !== undefined) {
-        p.log.info(`Progress: ${session.completedSteps}/${session.totalSteps} steps`);
+      if (session?.totalTasks && session.completedTasks !== undefined) {
+        p.log.info(`Progress: ${session.completedTasks}/${session.totalTasks} tasks`);
       }
     } else {
       p.note(
@@ -344,7 +344,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     }
 
     // Initialize session with PRD
-    const steps = countPrdSteps(prd.content);
+    const tasks = countPrdTasks(prd.content);
     initSession(cwd, {
       ticketId: selectedTicket.id,
       ticketTitle: selectedTicket.title,
@@ -355,7 +355,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     updateSessionPrd(cwd, {
       prdPageId: prd.pageId,
       prdContent: prd.content,
-      totalSteps: steps.total,
+      totalTasks: tasks.total,
     });
 
     session = loadCurrentSession(cwd);
@@ -398,7 +398,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   // Show what we're about to do
   p.note(
     `Ticket: ${session.ticketTitle}\n` +
-    `PRD steps: ${session.totalSteps ?? "?"}\n` +
+    `PRD tasks: ${session.totalTasks ?? "?"}\n` +
     `Iteration: ${iteration}`,
     "Implementing PRD"
   );
@@ -406,7 +406,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   // Confirm before running (skip if --yes flag)
   if (!yes) {
     const proceed = await p.confirm({
-      message: "Ready to implement one step?",
+      message: "Ready to implement one task?",
       initialValue: true,
     });
 

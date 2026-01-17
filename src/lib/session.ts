@@ -18,8 +18,8 @@ export interface Session {
   prdPageId?: string;        // ID of the PRD child page in Notion
   prdContent?: string;       // Cached PRD content (markdown)
   prdFetchedAt?: string;     // When PRD was last fetched
-  totalSteps?: number;       // Total steps in the PRD
-  completedSteps?: number;   // Steps marked complete
+  totalTasks?: number;       // Total tasks in the PRD
+  completedTasks?: number;   // Tasks marked complete
   // OpenCode session continuity (for future use)
   opencodeSessionId?: string; // Track opencode session for --continue flag
   // Local mode fields
@@ -148,23 +148,23 @@ export function updateSessionPrd(
   prdData: {
     prdPageId: string;
     prdContent: string;
-    totalSteps?: number;
+    totalTasks?: number;
   }
 ): Session | null {
   return updateSession(cwd, {
     prdPageId: prdData.prdPageId,
     prdContent: prdData.prdContent,
     prdFetchedAt: new Date().toISOString(),
-    totalSteps: prdData.totalSteps,
-    completedSteps: 0,
+    totalTasks: prdData.totalTasks,
+    completedTasks: 0,
   });
 }
 
 /**
- * Update completed steps count
+ * Update completed tasks count
  */
-export function updateCompletedSteps(cwd: string, completedSteps: number): Session | null {
-  return updateSession(cwd, { completedSteps });
+export function updateCompletedTasks(cwd: string, completedTasks: number): Session | null {
+  return updateSession(cwd, { completedTasks });
 }
 
 /**
@@ -184,9 +184,9 @@ export function getSessionPrd(cwd: string): string | null {
 }
 
 /**
- * Count steps in PRD content (looks for checkbox patterns)
+ * Count tasks in PRD content (looks for checkbox patterns)
  */
-export function countPrdSteps(prdContent: string): { total: number; completed: number } {
+export function countPrdTasks(prdContent: string): { total: number; completed: number } {
   const uncheckedPattern = /- \[ \]/g;
   const checkedPattern = /- \[x\]/gi;
   
