@@ -18,10 +18,18 @@ const McpServerSchema = z.object({
   oauth: z.union([z.object({}), z.literal(false)]).optional(),
 });
 
+/**
+ * Valid reasoning effort levels for Claude models
+ */
+export const ReasoningEffortLevels = ['low', 'medium', 'high', 'xhigh'] as const;
+export type ReasoningEffort = (typeof ReasoningEffortLevels)[number];
+
 const OpenCodeConfigSchema = z
   .object({
     $schema: z.string().optional(),
     mcp: z.record(z.string(), McpServerSchema).optional(),
+    model: z.string().optional(),
+    reasoningEffort: z.enum(ReasoningEffortLevels).optional(),
   })
   .passthrough(); // Allow other fields we don't know about
 
