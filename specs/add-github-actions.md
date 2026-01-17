@@ -1,10 +1,10 @@
 ---
 id: add-github-actions
 title: Add GitHub Actions
-status: todo
+status: in-progress
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T00:00:00.000Z
+updated: 2026-01-17T16:45:30.000Z
 ---
 
 ## Summary
@@ -13,7 +13,7 @@ Add a GitHub Actions CI workflow that runs build, typecheck, and lint checks on 
 
 ## Tasks
 
-- [ ] Create `.github/workflows/` directory structure
+- [x] Create `.github/workflows/` directory structure
 - [ ] Create `ci.yml` workflow with trigger on `push` to `main` and `pull_request` events
 - [ ] Configure Node.js version matrix (18, 20, 22)
 - [ ] Add checkout step using `actions/checkout@v4`
