@@ -1,10 +1,10 @@
 ---
 id: make-setting-model-easier
 title: Make settings the used model in opencode easier
-status: todo
+status: done
 priority: high
 created: 2026-01-17T14:30:00Z
-updated: 2026-01-17T14:30:00Z
+updated: 2026-01-17T17:04:58.785Z
 ---
 
 ## Summary
@@ -13,17 +13,17 @@ Add a `sonata model` command to easily view, search, and set the default AI mode
 
 ## Tasks
 
-- [ ] Add `@inquirer/search` dependency to `package.json`
-- [ ] Extend `OpenCodeConfigSchema` in `src/lib/opencode-config.ts` to include `model` and `reasoningEffort` fields
-- [ ] Add helper functions `getModel()`, `setModel()`, `getReasoningEffort()`, `setReasoningEffort()` in `opencode-config.ts`
-- [ ] Add helper function `getAvailableModels()` that calls `opencode models` and parses output
-- [ ] Create `src/commands/model.ts` with the `modelCommand` function
-- [ ] Implement `sonata model` (no args) - show current model and reasoning effort
-- [ ] Implement `sonata model list [provider]` - list available models (optionally filtered by provider)
-- [ ] Implement `sonata model set <model>` - set model directly via CLI arg
-- [ ] Implement `sonata model set` (interactive) - use `@inquirer/search` for searchable model picker
-- [ ] Implement `--effort <level>` flag (low/medium/high/xhigh) to set reasoning effort
-- [ ] Register the command in `src/index.ts`
+- [x] Add `@inquirer/search` dependency to `package.json`
+- [x] Extend `OpenCodeConfigSchema` in `src/lib/opencode-config.ts` to include `model` and `reasoningEffort` fields
+- [x] Add helper functions `getModel()`, `setModel()`, `getReasoningEffort()`, `setReasoningEffort()` in `opencode-config.ts`
+- [x] Add helper function `getAvailableModels()` that calls `opencode models` and parses output
+- [x] Create `src/commands/model.ts` with the `modelCommand` function
+- [x] Implement `sonata model` (no args) - show current model and reasoning effort
+- [x] Implement `sonata model list [provider]` - list available models (optionally filtered by provider)
+- [x] Implement `sonata model set <model>` - set model directly via CLI arg
+- [x] Implement `sonata model set` (interactive) - use `@inquirer/search` for searchable model picker
+- [x] Implement `--effort <level>` flag (low/medium/high/xhigh) to set reasoning effort
+- [x] Register the command in `src/index.ts`
 
 ## Files
 
