@@ -1,10 +1,10 @@
 ---
 id: fix-progress-file-reset
 title: the progress file does not get reset
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T15:00:00.000Z
+updated: 2026-01-17T15:10:00.000Z
 ---
 
 ## Summary
@@ -16,7 +16,7 @@ The progress file (`progress.txt`) does not get reset when a task completes, cau
 - [x] Import `deleteProgress` from `../lib/progress` in `src/commands/loop.ts`
 - [x] Call `deleteProgress(cwd)` after `clearSession(cwd)` in `src/commands/loop.ts` (~2 locations)
 - [x] Create `src/commands/clean.ts` with confirmation prompt that deletes progress file
-- [ ] Register `clean` command in `src/cli.ts`
+- [x] Register `clean` command in `src/cli.ts`
 
 ## Files
 - src/commands/run.ts

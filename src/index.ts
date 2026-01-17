@@ -4,6 +4,7 @@ import { planCommand } from "./commands/plan.js";
 import { runCommand } from "./commands/run.js";
 import { loopCommand } from "./commands/loop.js";
 import { statusCommand } from "./commands/status.js";
+import { cleanCommand } from "./commands/clean.js";
 
 const program = new Command();
 
@@ -90,6 +91,19 @@ program
       taskFile: options.taskFile,
       cwd: options.dir,
       local: options.local,
+    });
+  });
+
+// Clean command
+program
+  .command("clean")
+  .description("Delete progress.txt to start fresh")
+  .option("-d, --dir <directory>", "Working directory", process.cwd())
+  .option("-y, --yes", "Skip confirmation prompt", false)
+  .action(async (options) => {
+    await cleanCommand({
+      cwd: options.dir,
+      yes: options.yes,
     });
   });
 
