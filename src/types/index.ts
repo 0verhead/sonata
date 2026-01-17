@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 /**
  * Task from Notion kanban board
@@ -11,15 +11,15 @@ export const NotionTaskSchema = z.object({
   priority: z.string().optional(),
   acceptanceCriteria: z.string().optional(),
   url: z.string().optional(),
-});
+})
 
-export type NotionTask = z.infer<typeof NotionTaskSchema>;
+export type NotionTask = z.infer<typeof NotionTaskSchema>
 
 /**
  * User configuration stored in ~/.sonata/config.json
  */
 export const ConfigSchema = z.object({
-  mode: z.enum(["local", "notion"]).optional(),
+  mode: z.enum(['local', 'notion']).optional(),
   notion: z.object({
     boardId: z.string().optional(),
     viewId: z.string().optional(), // View ID from ?v= parameter in Notion URL
@@ -43,9 +43,9 @@ export const ConfigSchema = z.object({
   loop: z.object({
     maxIterations: z.number().int().positive(),
   }),
-});
+})
 
-export type Config = z.infer<typeof ConfigSchema>;
+export type Config = z.infer<typeof ConfigSchema>
 
 /**
  * Progress entry for tracking work across iterations
@@ -57,9 +57,9 @@ export const ProgressEntrySchema = z.object({
   taskTitle: z.string(),
   action: z.string(),
   notes: z.string().optional(),
-});
+})
 
-export type ProgressEntry = z.infer<typeof ProgressEntrySchema>;
+export type ProgressEntry = z.infer<typeof ProgressEntrySchema>
 
 /**
  * Result of running opencode
@@ -70,9 +70,9 @@ export const OpenCodeResultSchema = z.object({
   isComplete: z.boolean(),
   error: z.string().optional(),
   taskTitle: z.string().optional(),
-});
+})
 
-export type OpenCodeResult = z.infer<typeof OpenCodeResultSchema>;
+export type OpenCodeResult = z.infer<typeof OpenCodeResultSchema>
 
 /**
  * Options for the loop command
@@ -80,27 +80,27 @@ export type OpenCodeResult = z.infer<typeof OpenCodeResultSchema>;
 export const LoopOptionsSchema = z.object({
   iterations: z.number().int().positive(),
   hitl: z.boolean(),
-});
+})
 
-export type LoopOptions = z.infer<typeof LoopOptionsSchema>;
+export type LoopOptions = z.infer<typeof LoopOptionsSchema>
 
 /**
  * Helper to check if a value is a non-empty string
  */
 export function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0;
+  return typeof value === 'string' && value.length > 0
 }
 
 /**
  * Helper to check if a value is a boolean
  */
 export function isBoolean(value: unknown): value is boolean {
-  return typeof value === "boolean";
+  return typeof value === 'boolean'
 }
 
 /**
  * Helper to check if clack was cancelled (returns symbol)
  */
 export function isCancelled(value: unknown): boolean {
-  return typeof value === "symbol";
+  return typeof value === 'symbol'
 }

@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Lock files
+package-lock.json
+
+# Generated files
+coverage/
+
+# Sonata runtime
+.sonata/
+progress.txt
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store

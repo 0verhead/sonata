@@ -37,18 +37,22 @@ Structure your task file for best results:
 # Tasks
 
 ## High Priority
+
 - [ ] Critical bug fix: describe the issue
 - [ ] Core feature: what needs to be built
 
 ## Medium Priority
+
 - [ ] Enhancement: improve existing feature
 - [ ] Refactor: clean up specific code
 
 ## Low Priority
+
 - [ ] Polish: minor UI improvements
 - [ ] Docs: update documentation
 
 ## Done
+
 - [x] Completed task 1
 - [x] Completed task 2
 
@@ -57,6 +61,7 @@ Structure your task file for best results:
 ## Context
 
 Add any important context here:
+
 - Tech stack details
 - External API docs
 - Design decisions
@@ -71,5 +76,6 @@ Add any important context here:
 5. **Stop condition** - Clear signal when all work is done
 
 For more information, see:
+
 - https://ghuntley.com/ralph/
 - https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum

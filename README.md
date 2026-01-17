@@ -13,6 +13,7 @@ while :; do cat PROMPT.md | opencode ; done
 The key insight: **the agent chooses the task, not you**. You define the end state in a task file, and Ralph figures out how to get there.
 
 This tool wraps that concept with:
+
 - Beautiful CLI interface using [clack](https://github.com/bombshell-dev/clack)
 - Notion kanban integration via MCP (Model Context Protocol)
 - Two-phase workflow: collaborative planning + autonomous execution
@@ -21,6 +22,7 @@ This tool wraps that concept with:
 - Session state persistence
 
 Read more about Ralph:
+
 - [Ralph Wiggum as a "software engineer"](https://ghuntley.com/ralph/)
 - [11 Tips For AI Coding With Ralph Wiggum](https://www.aihero.dev/tips-for-ai-coding-with-ralph-wiggum)
 
@@ -54,6 +56,7 @@ sonata/
 ```
 
 The tool doesn't call the Notion API directly. Instead:
+
 1. OpenCode has a Notion MCP server configured (`https://mcp.notion.com/mcp`)
 2. sonata sends prompts to OpenCode asking it to use Notion tools
 3. OpenCode executes MCP tools (`notion-fetch`, `notion-create-pages`, etc.)
@@ -140,11 +143,11 @@ sonata run            # Runs with your tasks
 
 sonata uses a **two-phase workflow** for safer, more effective AI coding:
 
-| Phase | Command | Mode | Description |
-|-------|---------|------|-------------|
-| **Planning** | `plan` | Interactive | Human + AI collaboratively create a PRD |
-| **Execution** | `run` | HITL | Implement one PRD step at a time |
-| **Execution** | `loop` | AFK | Autonomous implementation until complete |
+| Phase         | Command | Mode        | Description                              |
+| ------------- | ------- | ----------- | ---------------------------------------- |
+| **Planning**  | `plan`  | Interactive | Human + AI collaboratively create a PRD  |
+| **Execution** | `run`   | HITL        | Implement one PRD step at a time         |
+| **Execution** | `loop`  | AFK         | Autonomous implementation until complete |
 
 ### Phase 1: Planning (`plan`)
 
@@ -176,6 +179,7 @@ Once the PRD is approved, the AI implements it step by step:
 ### `sonata setup`
 
 Interactive configuration wizard. Configures:
+
 - Notion board connection (database ID, status columns)
 - Git settings (create branches, create PRs, base branch)
 - Default max iterations for AFK mode
@@ -222,6 +226,7 @@ sonata loop --hitl   # Pause after each iteration for confirmation
 ```
 
 The loop continues until:
+
 - All tasks complete (completion signal detected)
 - Max iterations reached
 - An error occurs
@@ -229,6 +234,7 @@ The loop continues until:
 ### `sonata status`
 
 Show comprehensive current state:
+
 - Configuration status
 - Active session info
 - Task source (Notion/local file)
@@ -275,6 +281,7 @@ Each iteration:
 ### Session Management
 
 Session state is stored in `.sonata/session.json` per project:
+
 - Ticket ID being worked on
 - Current branch
 - Iteration count
@@ -285,6 +292,7 @@ This enables resuming work across CLI invocations and auto-detecting matching br
 ### Git Workflow
 
 When configured, sonata will:
+
 1. Create a new branch from base (e.g., `task/add-auth-abc123`)
 2. Commit changes during each iteration
 3. Create a PR when all tasks are complete
@@ -341,6 +349,7 @@ sonata run     # Implement PRD steps
 ```
 
 The tool automatically:
+
 1. Creates `opencode.json` with Notion MCP config (if missing)
 2. Fetches tasks from your Notion board
 3. Creates PRDs as child pages under tickets
@@ -350,36 +359,36 @@ The tool automatically:
 
 ### Task Source Priority
 
-| Scenario | What happens |
-|----------|--------------|
-| Notion configured, no `TASKS.md` | Uses Notion board |
-| Only `TASKS.md` exists | Uses local file |
-| Both available | Prompts you to choose |
+| Scenario                         | What happens          |
+| -------------------------------- | --------------------- |
+| Notion configured, no `TASKS.md` | Uses Notion board     |
+| Only `TASKS.md` exists           | Uses local file       |
+| Both available                   | Prompts you to choose |
 
 ## Options
 
 ### Command Options
 
-| Command | Option | Description |
-|---------|--------|-------------|
-| All | `-d, --dir <dir>` | Working directory |
-| `plan` | `--ticket <id>` | Specific Notion ticket ID |
-| `run` | `-y, --yes` | Skip confirmations |
-| `run` | `--ticket <id>` | Specific Notion ticket ID |
-| `loop` | `--hitl` | Pause after each iteration |
-| `loop` | `--ticket <id>` | Specific Notion ticket ID |
+| Command | Option            | Description                |
+| ------- | ----------------- | -------------------------- |
+| All     | `-d, --dir <dir>` | Working directory          |
+| `plan`  | `--ticket <id>`   | Specific Notion ticket ID  |
+| `run`   | `-y, --yes`       | Skip confirmations         |
+| `run`   | `--ticket <id>`   | Specific Notion ticket ID  |
+| `loop`  | `--hitl`          | Pause after each iteration |
+| `loop`  | `--ticket <id>`   | Specific Notion ticket ID  |
 
 ## Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| TypeScript | Language (ES2022, ESM) |
-| Commander.js | CLI argument parsing |
-| @clack/prompts | Beautiful terminal UI |
+| Technology       | Purpose                       |
+| ---------------- | ----------------------------- |
+| TypeScript       | Language (ES2022, ESM)        |
+| Commander.js     | CLI argument parsing          |
+| @clack/prompts   | Beautiful terminal UI         |
 | @opencode-ai/sdk | Programmatic OpenCode control |
-| execa | Shell command execution |
-| Zod | Runtime type validation |
-| tsup | Fast ESBuild bundling |
+| execa            | Shell command execution       |
+| Zod              | Runtime type validation       |
+| tsup             | Fast ESBuild bundling         |
 
 ## Philosophy
 
