@@ -4,7 +4,7 @@ title: the progress file does not get reset
 status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T15:10:00.000Z
+updated: 2026-01-17T14:13:03.806Z
 ---
 
 ## Summary
