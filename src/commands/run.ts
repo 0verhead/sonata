@@ -10,6 +10,9 @@ import {
   getCommitsSinceBase,
   generatePRBody,
   ticketMatchesBranch,
+  stageAll,
+  commit,
+  hasChanges,
 } from '../lib/git.js';
 import { resolveMode, ModeResolutionError } from '../lib/mode.js';
 import {
@@ -652,6 +655,13 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
 
     // Update spec status to done
     updateSpecStatus(cwd, selectedSpec.id, 'done');
+
+    // Commit the spec status change
+    if (inGitRepo && (await hasChanges(cwd))) {
+      await stageAll(cwd);
+      await commit('docs: mark spec as done', cwd);
+    }
+
     p.log.info('Spec status updated to done');
 
     // Create PR if configured
