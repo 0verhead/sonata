@@ -436,10 +436,14 @@ You are implementing this spec step by step.
    - What has already been completed
    - What remains
 
-2. CHOOSE the next step based on:
-   - Dependencies (prerequisites first)
-   - Risk (tackle unknowns early)
-   - Architectural importance
+2. CHOOSE the next step based on this priority order:
+   1. Architectural decisions and core abstractions
+   2. Integration points between modules
+   3. Unknown unknowns and spike work
+   4. Standard features and implementation
+   5. Polish, cleanup, and quick wins
+   
+   Fail fast on risky work. Save easy wins for later.
 
 3. IMPLEMENT only ONE step:
    - Make focused, small changes
