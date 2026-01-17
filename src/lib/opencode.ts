@@ -452,7 +452,11 @@ You are implementing this spec task by task.
 
 3. IMPLEMENT only ONE task:
    - Make focused, small changes
-   - Run feedback loops: types, tests, lint
+   - Run feedback loops after each change:
+     - \`npm run typecheck\` - verify TypeScript types
+     - \`npm run lint\` - check for code quality issues (use \`npm run lint:fix\` to auto-fix)
+     - \`npm run format:check\` - verify formatting (use \`npm run format\` to auto-fix)
+     - Run tests if applicable
    - Fix any issues before continuing
 
 4. UPDATE ${progressFile} with:
