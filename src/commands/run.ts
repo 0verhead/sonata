@@ -578,7 +578,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
 
   // Create git branch if needed
   let branch = "";
-  if (inGitRepo && config?.git.createBranch) {
+  if (inGitRepo && config.git.createBranch) {
     const currentBranch = await getCurrentBranch(cwd);
     if (currentBranch === config.git.baseBranch) {
       const safeBranchName = selectedSpec.title
@@ -681,7 +681,7 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
     p.log.info("Spec status updated to done");
 
     // Create PR if configured
-    if (inGitRepo && config?.git.createPR) {
+    if (inGitRepo && config.git.createPR) {
       const currentBranch = await getCurrentBranch(cwd);
       if (currentBranch !== config.git.baseBranch) {
         const commits = await getCommitsSinceBase(config.git.baseBranch, cwd);
