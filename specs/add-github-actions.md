@@ -1,10 +1,10 @@
 ---
 id: add-github-actions
 title: Add GitHub Actions
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T16:45:30.000Z
+updated: 2026-01-17T16:50:00.000Z
 ---
 
 ## Summary
@@ -14,14 +14,14 @@ Add a GitHub Actions CI workflow that runs build, typecheck, and lint checks on 
 ## Tasks
 
 - [x] Create `.github/workflows/` directory structure
-- [ ] Create `ci.yml` workflow with trigger on `push` to `main` and `pull_request` events
-- [ ] Configure Node.js version matrix (18, 20, 22)
-- [ ] Add checkout step using `actions/checkout@v4`
-- [ ] Add Node.js setup step using `actions/setup-node@v4` with npm caching enabled
-- [ ] Add `npm ci` step to install dependencies
-- [ ] Add `npm run build` step
-- [ ] Add `npm run typecheck` step
-- [ ] Add `npm run lint` step
+- [x] Create `ci.yml` workflow with trigger on `push` to `main` and `pull_request` events
+- [x] Configure Node.js version matrix (18, 20, 22)
+- [x] Add checkout step using `actions/checkout@v4`
+- [x] Add Node.js setup step using `actions/setup-node@v4` with npm caching enabled
+- [x] Add `npm ci` step to install dependencies
+- [x] Add `npm run build` step
+- [x] Add `npm run typecheck` step
+- [x] Add `npm run lint` step
 
 ## Files
 
