@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 /**
  * Spec frontmatter schema
@@ -11,9 +11,9 @@ export const SpecFrontmatterSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']).optional(),
   created: z.string(),
   updated: z.string(),
-})
+});
 
-export type SpecFrontmatter = z.infer<typeof SpecFrontmatterSchema>
+export type SpecFrontmatter = z.infer<typeof SpecFrontmatterSchema>;
 
 /**
  * Full spec schema (frontmatter + content)
@@ -27,34 +27,34 @@ export const SpecSchema = z.object({
   updated: z.string(),
   content: z.string(), // The markdown body (PRD)
   filepath: z.string(), // Full path to the file
-})
+});
 
-export type Spec = z.infer<typeof SpecSchema>
+export type Spec = z.infer<typeof SpecSchema>;
 
 /**
  * Spec status type
  */
-export type SpecStatus = 'todo' | 'in-progress' | 'done'
+export type SpecStatus = 'todo' | 'in-progress' | 'done';
 
 /**
  * Spec priority type
  */
-export type SpecPriority = 'high' | 'medium' | 'low'
+export type SpecPriority = 'high' | 'medium' | 'low';
 
 /**
  * Data for creating a new spec
  */
 export interface CreateSpecData {
-  title: string
-  content: string
-  status?: SpecStatus
-  priority?: SpecPriority
+  title: string;
+  content: string;
+  status?: SpecStatus;
+  priority?: SpecPriority;
 }
 
 /**
  * Options for listing specs
  */
 export interface ListSpecsOptions {
-  status?: SpecStatus
-  priority?: SpecPriority
+  status?: SpecStatus;
+  priority?: SpecPriority;
 }

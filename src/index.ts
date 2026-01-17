@@ -1,28 +1,28 @@
-import { Command } from 'commander'
+import { Command } from 'commander';
 
-import { cleanCommand } from './commands/clean.js'
-import { loopCommand } from './commands/loop.js'
-import { planCommand } from './commands/plan.js'
-import { runCommand } from './commands/run.js'
-import { setupCommand } from './commands/setup.js'
-import { statusCommand } from './commands/status.js'
+import { cleanCommand } from './commands/clean.js';
+import { loopCommand } from './commands/loop.js';
+import { planCommand } from './commands/plan.js';
+import { runCommand } from './commands/run.js';
+import { setupCommand } from './commands/setup.js';
+import { statusCommand } from './commands/status.js';
 
-const program = new Command()
+const program = new Command();
 
 program
   .name('sonata')
   .description(
     'CLI tool that implements the Ralph loop pattern using OpenCode and Notion kanban boards'
   )
-  .version('0.1.0')
+  .version('0.1.0');
 
 // Setup command
 program
   .command('setup')
   .description('Configure sonata: Notion connection, git settings, etc.')
   .action(async () => {
-    await setupCommand()
-  })
+    await setupCommand();
+  });
 
 // Plan command (Phase 1: collaborative PRD creation)
 program
@@ -38,8 +38,8 @@ program
       ticketId: options.ticket,
       local: options.local,
       notion: options.notion,
-    })
-  })
+    });
+  });
 
 // Run command (Phase 2: implement one step)
 program
@@ -57,8 +57,8 @@ program
       ticketId: options.ticket,
       local: options.local,
       notion: options.notion,
-    })
-  })
+    });
+  });
 
 // Loop command (Phase 2: implement multiple steps autonomously)
 program
@@ -77,8 +77,8 @@ program
       ticketId: options.ticket,
       local: options.local,
       notion: options.notion,
-    })
-  })
+    });
+  });
 
 // Status command
 program
@@ -92,8 +92,8 @@ program
       taskFile: options.taskFile,
       cwd: options.dir,
       local: options.local,
-    })
-  })
+    });
+  });
 
 // Clean command
 program
@@ -105,8 +105,8 @@ program
     await cleanCommand({
       cwd: options.dir,
       yes: options.yes,
-    })
-  })
+    });
+  });
 
 // Parse and execute
-program.parse()
+program.parse();

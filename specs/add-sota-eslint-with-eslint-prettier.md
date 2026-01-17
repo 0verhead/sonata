@@ -17,7 +17,7 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - [x] Install Prettier and eslint-config-prettier (`prettier`, `eslint-config-prettier`)
 - [x] Install additional plugins (`eslint-plugin-import-x`, `eslint-plugin-n`, `eslint-plugin-unicorn`)
 - [x] Create `eslint.config.js` with flat config (TypeScript recommended, Prettier compat, import sorting, Node.js and unicorn rules)
-- [x] Create `.prettierrc` config file (use defaults)
+- [x] Create `.prettierrc` config file (semicolons enabled, single quotes, trailing commas)
 - [x] Create `.prettierignore` file (dist, node_modules, etc.)
 - [x] Install Husky and lint-staged (`husky`, `lint-staged`)
 - [x] Add lint-staged config to `package.json` (eslint --fix, prettier --write, tsc --noEmit)
