@@ -1,3 +1,4 @@
+// ESLint 9 flat config for TypeScript project
 import eslint from '@eslint/js'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import importX from 'eslint-plugin-import-x'
