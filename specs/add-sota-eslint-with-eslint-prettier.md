@@ -1,10 +1,10 @@
 ---
 id: add-sota-eslint-with-eslint-prettier
 title: Add sota eslint with eslint-prettier
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T15:30:00.000Z
+updated: 2026-01-17T15:45:00.000Z
 ---
 
 ## Summary
@@ -26,7 +26,7 @@ Configure ESLint 9 (flat config) with TypeScript, Prettier integration, and mode
 - [x] Update `buildImplementationPrompt` in `src/lib/opencode.ts` to reference specific lint/format/typecheck commands
 - [x] Update `buildLocalImplementationPrompt` in `src/lib/opencode.ts` with same updates
 - [x] Run linter and fix any existing issues in codebase
-- [ ] Test pre-commit hook with a test commit
+- [x] Test pre-commit hook with a test commit
 
 ## Files
 
