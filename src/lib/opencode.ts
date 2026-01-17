@@ -170,10 +170,10 @@ Use this structure:
 ## Summary
 Brief description of what this PRD accomplishes.
 
-## Steps
-- [ ] Step 1: Description
-- [ ] Step 2: Description
-- [ ] Step 3: Description
+## Tasks
+- [ ] Create database schema for metrics
+- [ ] Implement core tracking functionality
+- [ ] Add export functionality for formats
 
 ## Files
 - path/to/file1.ts
