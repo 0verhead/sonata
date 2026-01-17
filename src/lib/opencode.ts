@@ -325,3 +325,140 @@ export function spawnOpenCodeTui(
     }
   }
 }
+
+/**
+ * Build the planning prompt for local spec creation
+ */
+export function buildLocalPlanningPrompt(options: {
+  title: string;
+  specsDir: string;
+  cwd: string;
+}): string {
+  const { title, specsDir } = options;
+
+  return `
+You are helping create a spec (PRD) for a local project task.
+
+## Task Info
+- **Title:** ${title}
+- **Specs Directory:** ${specsDir}/
+
+## Your Task
+
+1. **EXPLORE** the codebase to understand what changes are needed
+
+2. **ASK** clarifying questions - don't assume, verify with the developer
+
+3. **PROPOSE** a detailed spec/PRD with:
+   - Summary (1-2 sentences)
+   - Implementation steps (checkboxes, small and atomic)
+   - Files likely to be modified
+   - Acceptance criteria
+   - Definition of done
+
+4. **REFINE** based on developer feedback
+
+5. **SAVE THE SPEC** when the developer approves:
+   - Create a markdown file in the ${specsDir}/ folder
+   - Use this EXACT format with YAML frontmatter:
+
+\`\`\`markdown
+---
+id: <slug-from-title>
+title: ${title}
+status: todo
+priority: high
+created: <ISO timestamp>
+updated: <ISO timestamp>
+---
+
+## Summary
+Brief description of what this spec accomplishes.
+
+## Steps
+- [ ] Step 1: Description
+- [ ] Step 2: Description
+- [ ] Step 3: Description
+
+## Files
+- path/to/file1.ts
+- path/to/file2.ts
+
+## Acceptance Criteria
+- Criterion 1
+- Criterion 2
+
+## Definition of Done
+When X, Y, and Z are complete and tests pass.
+\`\`\`
+
+## IMPORTANT REMINDERS
+
+- This is an **interactive session** - ask questions, don't assume
+- When the developer says something like "approve", "looks good, save it", "lgtm", or "create the spec":
+  → Immediately write the spec file to ${specsDir}/<slug>.md
+- After saving, confirm with this EXACT message: "Spec saved to ${specsDir}/! You can now exit and run \`notion-code run --local\` to start implementation."
+  (NOTE: The command is \`notion-code run --local\`, NOT \`opencode run\`)
+- If you're unsure whether to save, ask: "Would you like me to save this spec now?"
+`.trim();
+}
+
+/**
+ * Build the implementation prompt for local spec-based execution
+ */
+export function buildLocalImplementationPrompt(options: {
+  specTitle: string;
+  specContent: string;
+  specFilepath: string;
+  progressFile?: string;
+}): string {
+  const { specTitle, specContent, specFilepath, progressFile = "progress.txt" } = options;
+
+  return `
+@${progressFile}
+
+Spec for: ${specTitle}
+Source: ${specFilepath}
+
+---
+${specContent}
+---
+
+INSTRUCTIONS:
+You are implementing this spec step by step.
+
+1. READ the spec and ${progressFile} to understand:
+   - What steps exist
+   - What has already been completed
+   - What remains
+
+2. CHOOSE the next step based on:
+   - Dependencies (prerequisites first)
+   - Risk (tackle unknowns early)
+   - Architectural importance
+
+3. IMPLEMENT only ONE step:
+   - Make focused, small changes
+   - Run feedback loops: types, tests, lint
+   - Fix any issues before continuing
+
+4. UPDATE ${progressFile} with:
+   - Which step you completed
+   - Key decisions made
+   - Files changed
+   - Any blockers or notes for next iteration
+
+5. COMMIT the changes with a descriptive message
+
+6. UPDATE the spec file to mark the step as done:
+   - Change the checkbox from \`- [ ]\` to \`- [x]\` for the completed step
+   - Update the frontmatter: set status to "in-progress" if not already
+   - Update the "updated" timestamp in the frontmatter
+
+If ALL steps in the spec are complete and feedback loops pass:
+  - Update the spec status to "done" in the frontmatter
+  - Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
+
+IMPORTANT: Only work on ONE step per session.
+`.trim();
+}
