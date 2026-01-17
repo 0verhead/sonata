@@ -247,3 +247,38 @@ export function generatePRBody(commits: string[], taskTitle?: string): string {
   
   return lines.join("\n");
 }
+
+/**
+ * Extract ticket slug from branch name
+ * Branch format: task/{slug} or task/{slug}-{shortId}
+ */
+export function extractSlugFromBranch(branchName: string): string | null {
+  if (!branchName.startsWith("task/")) return null;
+  // Remove "task/" prefix and optional "-{8-char-hex}" suffix
+  return branchName.replace("task/", "").replace(/-[a-f0-9]{8}$/, "");
+}
+
+/**
+ * Generate slug from ticket title (same logic as branch creation)
+ */
+export function generateSlugFromTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 50);
+}
+
+/**
+ * Check if a ticket title matches a branch slug
+ * Handles partial matches due to truncation
+ */
+export function ticketMatchesBranch(ticketTitle: string, branchName: string): boolean {
+  const branchSlug = extractSlugFromBranch(branchName);
+  if (!branchSlug) return false;
+  
+  const ticketSlug = generateSlugFromTitle(ticketTitle);
+  
+  // Check if one starts with the other (handles truncation)
+  return ticketSlug.startsWith(branchSlug) || branchSlug.startsWith(ticketSlug);
+}
