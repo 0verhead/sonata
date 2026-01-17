@@ -4,14 +4,14 @@ title: Fix implementation order of prd steps
 status: in-progress
 priority: high
 created: 2026-01-17T15:00:00.000Z
-updated: 2026-01-17T15:30:00.000Z
+updated: 2026-01-17T16:00:00.000Z
 ---
 
 ## Summary
 Replace "Steps" terminology with "Tasks" throughout the codebase and unfinished specs to eliminate implicit sequential ordering that conflicts with the 5-tier priority system.
 
 ## Tasks
-- [ ] Update `buildPlanningPrompt()` in `src/lib/opencode.ts`: change `## Steps` to `## Tasks`, remove numbered format from examples
+- [x] Update `buildPlanningPrompt()` in `src/lib/opencode.ts`: change `## Steps` to `## Tasks`, remove numbered format from examples
 - [ ] Update `buildLocalPlanningPrompt()` in `src/lib/opencode.ts`: same changes
 - [ ] Update `buildImplementationPrompt()` in `src/lib/opencode.ts`: change "step" references to "task" (e.g., "step by step" → "task by task")
 - [ ] Update `buildLocalImplementationPrompt()` in `src/lib/opencode.ts`: same wording changes
