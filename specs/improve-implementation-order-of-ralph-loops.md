@@ -1,10 +1,10 @@
 ---
 id: improve-implementation-order-of-ralph-loops
 title: Improve implementation order of ralph loops
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T13:35:00.000Z
+updated: 2026-01-17T13:45:00.000Z
 ---
 
 ## Summary
@@ -12,7 +12,7 @@ Update the ralph loop implementation prompts to use the explicit prioritization 
 
 ## Steps
 - [x] Step 1: Update `buildImplementationPrompt()` in `src/lib/opencode.ts` to replace the vague "CHOOSE" section with the explicit 5-tier priority order from the article
-- [ ] Step 2: Update `buildLocalImplementationPrompt()` in the same file with identical prioritization instructions
+- [x] Step 2: Update `buildLocalImplementationPrompt()` in the same file with identical prioritization instructions
 
 ## Files
 - src/lib/opencode.ts
