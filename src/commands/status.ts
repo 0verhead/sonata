@@ -26,6 +26,11 @@ import {
   openCodeConfigExists,
   getOpenCodeConfigPath,
 } from "../lib/opencode-config.js";
+import {
+  loadCurrentSession,
+  hasActiveSession,
+  countPrdSteps,
+} from "../lib/session.js";
 
 const DEFAULT_TASK_FILE = "TASKS.md";
 
@@ -54,6 +59,36 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     console.log(`    Max iterations: ${config.loop.maxIterations}`);
   } else {
     console.log(`  ${chalk.yellow("!")} No config found. Run \`notion-code setup\``);
+  }
+
+  // Active Session status (PRD-based workflow)
+  console.log();
+  console.log(chalk.bold("Active Session:"));
+  if (hasActiveSession(cwd)) {
+    const session = loadCurrentSession(cwd);
+    if (session) {
+      console.log(`  ${chalk.green("✓")} Working on: ${session.ticketTitle}`);
+      console.log(`    Ticket ID: ${session.ticketId}`);
+      console.log(`    URL: ${session.ticketUrl}`);
+      console.log(`    Branch: ${session.branch || "N/A"}`);
+      console.log(`    Started: ${session.startedAt}`);
+      console.log(`    Iterations: ${session.iteration}`);
+      
+      // PRD status
+      if (session.prdContent) {
+        const steps = countPrdSteps(session.prdContent);
+        console.log(`    ${chalk.cyan("PRD loaded:")} ${steps.completed}/${steps.total} steps complete`);
+        if (session.prdFetchedAt) {
+          console.log(`    PRD fetched: ${session.prdFetchedAt}`);
+        }
+      } else {
+        console.log(`    ${chalk.yellow("PRD:")} Not loaded (run \`notion-code run\` to fetch)`);
+      }
+    }
+  } else {
+    console.log(`  ${chalk.dim("-")} No active session`);
+    console.log(`    Run \`notion-code plan\` to create a PRD for a ticket`);
+    console.log(`    Run \`notion-code run\` to start implementing a PRD`);
   }
 
   // Task source status
@@ -163,6 +198,13 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     `  ${hasGh ? chalk.green("✓") : chalk.red("✗")} GitHub CLI (gh)`
   );
 
+  // Next steps
   console.log();
-  p.outro("Run `notion-code run` to start or continue");
+  console.log(chalk.bold("Workflow:"));
+  console.log(`  1. ${chalk.cyan("notion-code plan")}    Create PRD for a ticket (collaborative)`);
+  console.log(`  2. ${chalk.cyan("notion-code run")}     Implement one PRD step`);
+  console.log(`  3. ${chalk.cyan("notion-code loop")}    Implement steps autonomously (AFK)`);
+
+  console.log();
+  p.outro("Run `notion-code plan` to start planning or `notion-code run` to implement");
 }

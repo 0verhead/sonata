@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { setupCommand } from "./commands/setup.js";
+import { planCommand } from "./commands/plan.js";
 import { runCommand } from "./commands/run.js";
 import { loopCommand } from "./commands/loop.js";
 import { statusCommand } from "./commands/status.js";
@@ -21,36 +22,47 @@ program
     await setupCommand();
   });
 
-// Run command (HITL - single iteration)
+// Plan command (Phase 1: collaborative PRD creation)
 program
-  .command("run")
-  .description("Run a single iteration (HITL mode)")
-  .option("-t, --task-file <file>", "Task file path", "TASKS.md")
+  .command("plan")
+  .description("Create a PRD for a ticket (collaborative planning)")
   .option("-d, --dir <directory>", "Working directory", process.cwd())
-  .option("-y, --yes", "Auto-confirm prompts", false)
-  .option("--file", "Force file-based task source (skip Notion)", false)
+  .option("--ticket <id>", "Ticket ID to plan (skip selection)")
   .action(async (options) => {
-    await runCommand({
-      taskFile: options.taskFile,
+    await planCommand({
       cwd: options.dir,
-      yes: options.yes,
-      useNotion: options.file ? false : undefined,
+      ticketId: options.ticket,
     });
   });
 
-// Loop command (AFK mode)
+// Run command (Phase 2: implement one step)
+program
+  .command("run")
+  .description("Implement one PRD step (HITL mode)")
+  .option("-d, --dir <directory>", "Working directory", process.cwd())
+  .option("-y, --yes", "Auto-confirm prompts", false)
+  .option("--ticket <id>", "Ticket ID to work on (bypass status filter)")
+  .action(async (options) => {
+    await runCommand({
+      cwd: options.dir,
+      yes: options.yes,
+      ticketId: options.ticket,
+    });
+  });
+
+// Loop command (Phase 2: implement multiple steps autonomously)
 program
   .command("loop [iterations]")
-  .description("Run the Ralph loop (AFK mode)")
-  .option("-t, --task-file <file>", "Task file path", "TASKS.md")
+  .description("Implement PRD steps autonomously (AFK mode)")
   .option("-d, --dir <directory>", "Working directory", process.cwd())
   .option("--hitl", "Human-in-the-loop mode (pause after each iteration)", false)
+  .option("--ticket <id>", "Ticket ID to work on (bypass status filter)")
   .action(async (iterations, options) => {
     await loopCommand({
       iterations: iterations ? parseInt(iterations, 10) : undefined,
-      taskFile: options.taskFile,
       cwd: options.dir,
       hitl: options.hitl,
+      ticketId: options.ticket,
     });
   });
 
