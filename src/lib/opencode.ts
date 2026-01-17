@@ -192,8 +192,8 @@ When X, Y, and Z are complete and tests pass.
 - This is an **interactive session** - ask questions, don't assume
 - When the developer says something like "approve", "looks good, save it", "lgtm", or "create the PRD":
   → Immediately use notion-create-pages to save the PRD to Notion
-- After saving, confirm with this EXACT message: "PRD saved to Notion! You can now exit and run \`notion-code run\` to start implementation."
-  (NOTE: The command is \`notion-code run\`, NOT \`opencode run\`)
+- After saving, confirm with this EXACT message: "PRD saved to Notion! You can now exit and run \`sonata run\` to start implementation."
+   (NOTE: The command is \`sonata run\`, NOT \`opencode run\`)
 - If you're unsure whether to save, ask: "Would you like me to save this PRD to Notion now?"
 `.trim();
 }
@@ -290,7 +290,7 @@ export function spawnOpenCodeTui(
   const cwd = options.cwd ?? process.cwd();
   
   // Write prompt to temp file to avoid shell argument length limits
-  const promptDir = path.join(cwd, ".notion-code");
+  const promptDir = path.join(cwd, ".sonata");
   if (!fs.existsSync(promptDir)) {
     fs.mkdirSync(promptDir, { recursive: true });
   }
@@ -397,8 +397,8 @@ When X, Y, and Z are complete and tests pass.
 - This is an **interactive session** - ask questions, don't assume
 - When the developer says something like "approve", "looks good, save it", "lgtm", or "create the spec":
   → Immediately write the spec file to ${specsDir}/<slug>.md
-- After saving, confirm with this EXACT message: "Spec saved to ${specsDir}/! You can now exit and run \`notion-code run --local\` to start implementation."
-  (NOTE: The command is \`notion-code run --local\`, NOT \`opencode run\`)
+- After saving, confirm with this EXACT message: "Spec saved to ${specsDir}/! You can now exit and run \`sonata run --local\` to start implementation."
+   (NOTE: The command is \`sonata run --local\`, NOT \`opencode run\`)
 - If you're unsure whether to save, ask: "Would you like me to save this spec now?"
 `.trim();
 }

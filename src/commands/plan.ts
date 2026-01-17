@@ -82,16 +82,16 @@ export async function planCommand(options: PlanOptions = {}): Promise<void> {
   }
 
   // Notion mode - original workflow
-  p.intro(chalk.bgCyan.black(" notion-code plan (HITL, collaborative) "));
+  p.intro(chalk.bgCyan.black(" sonata plan (HITL, collaborative) "));
 
   // Check if Notion is configured
   if (!config) {
-    p.cancel("No configuration found. Run `notion-code setup` first.");
+    p.cancel("No configuration found. Run `sonata setup` first.");
     process.exit(1);
   }
 
   if (!config.notion.boardId) {
-    p.cancel("Notion board not configured. Run `notion-code setup` first.");
+    p.cancel("Notion board not configured. Run `sonata setup` first.");
     process.exit(1);
   }
 
@@ -388,7 +388,7 @@ async function runPlanningSession(options: {
     p.log.success("PRD created in Notion!");
     p.note(
       "The PRD has been saved as a child page under the ticket.\n" +
-      "Run `notion-code run` to start implementing the PRD.",
+      "Run `sonata run` to start implementing the PRD.",
       "Next Steps"
     );
     p.outro(chalk.green("Planning session finished"));
@@ -414,13 +414,13 @@ async function runPlanningSession(options: {
     if (action === "manual") {
       p.note(
         "You can create the PRD manually in Notion as a child page under the ticket.\n" +
-        "Make sure to title it 'PRD' so notion-code can find it.\n" +
-        "Then run `notion-code run` to start implementing.",
+        "Make sure to title it 'PRD' so sonata can find it.\n" +
+        "Then run `sonata run` to start implementing.",
         "Manual PRD Creation"
       );
     } else {
       p.note(
-        "Run `notion-code plan` again when you're ready to continue.\n" +
+        "Run `sonata plan` again when you're ready to continue.\n" +
         "OpenCode will remember the context from your previous session.",
         "Next Steps"
       );
@@ -436,7 +436,7 @@ async function runPlanningSession(options: {
 async function runLocalPlanCommand(options: PlanOptions): Promise<void> {
   const { cwd = process.cwd() } = options;
 
-  p.intro(chalk.bgGreen.black(" notion-code plan --local (specs folder) "));
+  p.intro(chalk.bgGreen.black(" sonata plan --local (specs folder) "));
 
   // Load config for defaults
   const config = configExists() ? loadConfig() : null;
@@ -570,7 +570,7 @@ async function runLocalPlanCommand(options: PlanOptions): Promise<void> {
     p.log.success(`Spec created: ${newSpec.filepath}`);
     p.note(
       `The spec has been saved to ${newSpec.filepath}\n` +
-      "Run `notion-code run --local` to start implementing the spec.",
+      "Run `sonata run --local` to start implementing the spec.",
       "Next Steps"
     );
     p.outro(chalk.green("Planning session finished"));
@@ -597,12 +597,12 @@ async function runLocalPlanCommand(options: PlanOptions): Promise<void> {
       p.note(
         `You can create the spec manually in ${specsFolder}/\n` +
         "Use the format from templates/SPEC.example.md\n" +
-        "Then run `notion-code run --local` to start implementing.",
+        "Then run `sonata run --local` to start implementing.",
         "Manual Spec Creation"
       );
     } else {
       p.note(
-        "Run `notion-code plan --local` again when you're ready to continue.",
+        "Run `sonata plan --local` again when you're ready to continue.",
         "Next Steps"
       );
     }

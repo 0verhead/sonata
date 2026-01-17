@@ -102,16 +102,16 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   }
 
   // Notion mode - original workflow
-  p.intro(chalk.bgBlue.white(" notion-code run "));
+  p.intro(chalk.bgBlue.white(" sonata run "));
 
   // Check if Notion is configured
   if (!config) {
-    p.cancel("No configuration found. Run `notion-code setup` first.");
+    p.cancel("No configuration found. Run `sonata setup` first.");
     process.exit(1);
   }
 
   if (!config.notion.boardId) {
-    p.cancel("Notion board not configured. Run `notion-code setup` first.");
+    p.cancel("Notion board not configured. Run `sonata setup` first.");
     process.exit(1);
   }
 
@@ -151,7 +151,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     s.stop(prd ? "PRD fetched" : "No PRD found");
     
     if (!prd) {
-      p.cancel("Ticket has no PRD. Run `notion-code plan --ticket <id>` first.");
+      p.cancel("Ticket has no PRD. Run `sonata plan --ticket <id>` first.");
       process.exit(1);
     }
     
@@ -209,10 +209,10 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     } else {
       p.note(
         "This ticket doesn't have a PRD yet.\n" +
-        "Run `notion-code plan` to create one first.",
+        "Run `sonata plan` to create one first.",
         "No PRD Found"
       );
-      p.outro("Create a PRD with `notion-code plan`");
+      p.outro("Create a PRD with `sonata plan`");
       return;
     }
   } else {
@@ -241,10 +241,10 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
     if (readyTickets.length === 0) {
       p.note(
         "No tickets have PRDs yet.\n" +
-        "Run `notion-code plan` to create a PRD for a ticket first.",
+        "Run `sonata plan` to create a PRD for a ticket first.",
         "No Ready Tickets"
       );
-      p.outro("Create a PRD with `notion-code plan`");
+      p.outro("Create a PRD with `sonata plan`");
       return;
     }
 
@@ -493,8 +493,8 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   } else {
     p.log.info("Step complete. Task not yet finished.");
     p.note(
-      "Run `notion-code run` again to continue, or\n" +
-      "`notion-code loop` for autonomous mode.",
+      "Run `sonata run` again to continue, or\n" +
+      "`sonata loop` for autonomous mode.",
       "Next Steps"
     );
   }
@@ -515,7 +515,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
 async function runLocalCommand(options: RunOptions): Promise<void> {
   const { cwd = process.cwd(), yes = false } = options;
 
-  p.intro(chalk.bgGreen.white(" notion-code run --local "));
+  p.intro(chalk.bgGreen.white(" sonata run --local "));
 
   // Load config for defaults
   const config = configExists() ? loadConfig() : null;
@@ -544,10 +544,10 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   if (availableSpecs.length === 0) {
     p.note(
       "No specs found in todo or in-progress status.\n" +
-      "Run `notion-code plan --local` to create a spec first.",
+      "Run `sonata plan --local` to create a spec first.",
       "No Ready Specs"
     );
-    p.outro("Create a spec with `notion-code plan --local`");
+    p.outro("Create a spec with `sonata plan --local`");
     return;
   }
 
@@ -725,8 +725,8 @@ async function runLocalCommand(options: RunOptions): Promise<void> {
   } else {
     p.log.info("Step complete. Spec not yet finished.");
     p.note(
-      "Run `notion-code run --local` again to continue, or\n" +
-      "`notion-code loop --local` for autonomous mode.",
+      "Run `sonata run --local` again to continue, or\n" +
+      "`sonata loop --local` for autonomous mode.",
       "Next Steps"
     );
   }

@@ -8,7 +8,7 @@ import { statusCommand } from "./commands/status.js";
 const program = new Command();
 
 program
-  .name("notion-code")
+  .name("sonata")
   .description(
     "CLI tool that implements the Ralph loop pattern using OpenCode and Notion kanban boards"
   )
@@ -17,7 +17,7 @@ program
 // Setup command
 program
   .command("setup")
-  .description("Configure notion-code: Notion connection, git settings, etc.")
+  .description("Configure sonata: Notion connection, git settings, etc.")
   .action(async () => {
     await setupCommand();
   });

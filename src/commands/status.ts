@@ -50,7 +50,7 @@ interface StatusOptions {
 export async function statusCommand(options: StatusOptions = {}): Promise<void> {
   const { taskFile = DEFAULT_TASK_FILE, cwd = process.cwd() } = options;
 
-  p.intro(chalk.bgGreen.black(" notion-code status "));
+  p.intro(chalk.bgGreen.black(" sonata status "));
 
   // Config status
   console.log();
@@ -68,7 +68,7 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     console.log(`    Base branch: ${config.git.baseBranch}`);
     console.log(`    Max iterations: ${config.loop.maxIterations}`);
   } else {
-    console.log(`  ${chalk.yellow("!")} No config found. Run \`notion-code setup\``);
+    console.log(`  ${chalk.yellow("!")} No config found. Run \`sonata setup\``);
   }
 
   // Local Specs status
@@ -93,7 +93,7 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     }
   } else {
     console.log(`  ${chalk.dim("-")} No specs/ folder found`);
-    console.log(`    Run \`notion-code plan --local\` to create a spec`);
+    console.log(`    Run \`sonata plan --local\` to create a spec`);
   }
 
   // Active Session status (PRD-based workflow)
@@ -117,13 +117,13 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
           console.log(`    PRD fetched: ${session.prdFetchedAt}`);
         }
       } else {
-        console.log(`    ${chalk.yellow("PRD:")} Not loaded (run \`notion-code run\` to fetch)`);
+        console.log(`    ${chalk.yellow("PRD:")} Not loaded (run \`sonata run\` to fetch)`);
       }
     }
   } else {
     console.log(`  ${chalk.dim("-")} No active session`);
-    console.log(`    Run \`notion-code plan\` to create a PRD for a ticket`);
-    console.log(`    Run \`notion-code run\` to start implementing a PRD`);
+    console.log(`    Run \`sonata plan\` to create a PRD for a ticket`);
+    console.log(`    Run \`sonata run\` to start implementing a PRD`);
   }
 
   // Task source status
@@ -151,7 +151,7 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
 
   if (!hasNotionConfig && !hasTaskFile) {
     console.log(`  ${chalk.yellow("!")} No task source configured`);
-    console.log(`    Run \`notion-code setup\` for Notion, or \`notion-code run\` to create ${taskFile}`);
+    console.log(`    Run \`sonata setup\` for Notion, or \`sonata run\` to create ${taskFile}`);
   }
 
   // Progress status
@@ -207,14 +207,14 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
     );
     if (hasNotionConfig && !hasNotionMcp) {
       console.log(
-        chalk.yellow(`    Run \`notion-code setup\` to configure Notion MCP`)
+        chalk.yellow(`    Run \`sonata setup\` to configure Notion MCP`)
       );
     }
   } else {
     console.log(`  ${chalk.dim("-")} opencode.json not found`);
     if (hasNotionConfig) {
       console.log(
-        chalk.yellow(`    Run \`notion-code setup\` to create it`)
+        chalk.yellow(`    Run \`sonata setup\` to create it`)
       );
     }
   }
@@ -242,22 +242,22 @@ export async function statusCommand(options: StatusOptions = {}): Promise<void> 
   } else if (specsExist(cwd)) {
     console.log(`  Local specs/ folder available (will use local mode)`);
   } else {
-    console.log(`  No mode configured. Run \`notion-code setup\` or create specs/ folder.`);
+    console.log(`  No mode configured. Run \`sonata setup\` or create specs/ folder.`);
   }
 
   // Next steps
   console.log();
   console.log(chalk.bold("Workflow:"));
   console.log(`  ${chalk.bold("Notion mode:")}`);
-  console.log(`  1. ${chalk.cyan("notion-code plan")}         Create PRD for a ticket (collaborative)`);
-  console.log(`  2. ${chalk.cyan("notion-code run")}          Implement one PRD step`);
-  console.log(`  3. ${chalk.cyan("notion-code loop")}         Implement steps autonomously (AFK)`);
+  console.log(`  1. ${chalk.cyan("sonata plan")}         Create PRD for a ticket (collaborative)`);
+  console.log(`  2. ${chalk.cyan("sonata run")}          Implement one PRD step`);
+  console.log(`  3. ${chalk.cyan("sonata loop")}         Implement steps autonomously (AFK)`);
   console.log();
   console.log(`  ${chalk.bold("Local mode:")}`);
-  console.log(`  1. ${chalk.cyan("notion-code plan --local")}  Create spec in specs/ folder`);
-  console.log(`  2. ${chalk.cyan("notion-code run --local")}   Implement one spec step`);
-  console.log(`  3. ${chalk.cyan("notion-code loop --local")}  Implement steps autonomously (AFK)`);
+  console.log(`  1. ${chalk.cyan("sonata plan --local")}  Create spec in specs/ folder`);
+  console.log(`  2. ${chalk.cyan("sonata run --local")}   Implement one spec step`);
+  console.log(`  3. ${chalk.cyan("sonata loop --local")}  Implement steps autonomously (AFK)`);
 
   console.log();
-  p.outro("Run `notion-code plan` to start planning or `notion-code run` to implement");
+  p.outro("Run `sonata plan` to start planning or `sonata run` to implement");
 }

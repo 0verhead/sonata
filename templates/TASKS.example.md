@@ -1,6 +1,6 @@
 # Tasks
 
-This is an example task file for notion-code. Copy this to your project as `TASKS.md` and customize it.
+This is an example task file for sonata. Copy this to your project as `TASKS.md` and customize it.
 
 ## High Priority
 

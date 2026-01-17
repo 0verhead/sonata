@@ -20,7 +20,7 @@ import {
 } from "../types/index.js";
 
 export async function setupCommand(): Promise<void> {
-  p.intro(chalk.bgCyan.black(" notion-code setup "));
+  p.intro(chalk.bgCyan.black(" sonata setup "));
 
   // Check prerequisites
   const s = p.spinner();
@@ -269,7 +269,7 @@ This is a one-time setup to connect GitHub CLI to your account.`,
   p.log.step("Mode Configuration");
 
   p.note(
-    "notion-code supports two modes:\n" +
+    "sonata supports two modes:\n" +
     "- local: Store specs in a local specs/ folder\n" +
     "- notion: Use Notion kanban board for tasks\n\n" +
     "You can also use --local or --notion flags to override.",
@@ -387,5 +387,5 @@ This will open a browser to connect your Notion workspace.`,
     );
   }
 
-  p.outro(chalk.green("Setup complete! Run `notion-code run` to start."));
+  p.outro(chalk.green("Setup complete! Run `sonata run` to start."));
 }

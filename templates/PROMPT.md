@@ -1,6 +1,6 @@
 # Ralph Loop Prompt Template
 
-This is the default prompt structure used by notion-code. The actual prompt is
+This is the default prompt structure used by sonata. The actual prompt is
 built dynamically from your TASKS.md and progress.txt files.
 
 ## How It Works

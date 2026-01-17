@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { ConfigSchema, type Config } from "../types/index.js";
 
-const CONFIG_DIR = path.join(os.homedir(), ".notion-code");
+const CONFIG_DIR = path.join(os.homedir(), ".sonata");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 /**

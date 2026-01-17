@@ -1,4 +1,4 @@
-# notion-code
+# sonata
 
 A CLI tool that implements the **Ralph loop** pattern for autonomous AI-powered coding, bridging [OpenCode](https://opencode.ai) with Notion kanban boards.
 
@@ -27,7 +27,7 @@ Read more about Ralph:
 ## Architecture
 
 ```
-notion-code/
+sonata/
 ├── src/
 │   ├── index.ts              # CLI entry point (Commander.js)
 │   ├── commands/             # CLI commands: setup, plan, run, loop, status
@@ -37,8 +37,8 @@ notion-code/
 │   │   ├── loop.ts           # Multiple iterations (AFK mode)
 │   │   └── status.ts         # Show current state
 │   ├── lib/                  # Core utilities
-│   │   ├── config.ts         # ~/.notion-code/config.json management
-│   │   ├── session.ts        # .notion-code/session.json (per-project)
+│   │   ├── config.ts         # ~/.sonata/config.json management
+│   │   ├── session.ts        # .sonata/session.json (per-project)
 │   │   ├── progress.ts       # progress.txt tracking
 │   │   ├── git.ts            # Git/GitHub operations
 │   │   ├── opencode.ts       # OpenCode SDK integration
@@ -50,35 +50,35 @@ notion-code/
 ### Integration Flow
 
 ```
-[Notion Board] <--MCP--> [OpenCode] <--SDK--> [notion-code CLI]
+[Notion Board] <--MCP--> [OpenCode] <--SDK--> [sonata CLI]
 ```
 
 The tool doesn't call the Notion API directly. Instead:
 1. OpenCode has a Notion MCP server configured (`https://mcp.notion.com/mcp`)
-2. notion-code sends prompts to OpenCode asking it to use Notion tools
+2. sonata sends prompts to OpenCode asking it to use Notion tools
 3. OpenCode executes MCP tools (`notion-fetch`, `notion-create-pages`, etc.)
-4. notion-code parses the structured output
+4. sonata parses the structured output
 
 ## Installation
 
 ### From npm (when published)
 
 ```bash
-npm install -g notion-code
+npm install -g sonata
 ```
 
 Or run directly:
 
 ```bash
-npx notion-code
+npx sonata
 ```
 
 ### From source
 
 ```bash
 # Clone the repository
-git clone https://github.com/0verhead/notion-code.git
-cd notion-code
+git clone git@github.com:0verhead/sonata.git
+cd sonata
 
 # Install dependencies
 npm install
@@ -86,16 +86,16 @@ npm install
 # Build the project
 npm run build
 
-# Link globally so you can use `notion-code` anywhere
+# Link globally so you can use `sonata` anywhere
 npm link
 ```
 
-After linking, you can use `notion-code` from any directory.
+After linking, you can use `sonata` from any directory.
 
 To unlink later:
 
 ```bash
-npm unlink -g notion-code
+npm unlink -g sonata
 ```
 
 ### Prerequisites
@@ -110,35 +110,35 @@ npm unlink -g notion-code
 
 ```bash
 # One-time global setup
-notion-code setup          # Configure Notion board, git settings
+sonata setup          # Configure Notion board, git settings
 opencode mcp auth notion   # Authenticate with Notion
 
 # Then for any project:
 cd ~/projects/my-project
 
 # Phase 1: Create PRD collaboratively with AI
-notion-code plan
+sonata plan
 
 # Phase 2: Implement the PRD
-notion-code run            # One step at a time (HITL)
-notion-code loop 10        # Or run autonomously (AFK)
+sonata run            # One step at a time (HITL)
+sonata loop 10        # Or run autonomously (AFK)
 ```
 
 ### With local TASKS.md
 
 ```bash
 # One-time setup (skip Notion)
-notion-code setup
+sonata setup
 
 # Per project
 cd ~/projects/my-project
-notion-code run            # Creates TASKS.md template, you edit it
-notion-code run            # Runs with your tasks
+sonata run            # Creates TASKS.md template, you edit it
+sonata run            # Runs with your tasks
 ```
 
 ## Two-Phase Workflow
 
-notion-code uses a **two-phase workflow** for safer, more effective AI coding:
+sonata uses a **two-phase workflow** for safer, more effective AI coding:
 
 | Phase | Command | Mode | Description |
 |-------|---------|------|-------------|
@@ -173,52 +173,52 @@ Once the PRD is approved, the AI implements it step by step:
 
 ## Commands
 
-### `notion-code setup`
+### `sonata setup`
 
 Interactive configuration wizard. Configures:
 - Notion board connection (database ID, status columns)
 - Git settings (create branches, create PRs, base branch)
 - Default max iterations for AFK mode
 
-Config is stored in `~/.notion-code/config.json`.
+Config is stored in `~/.sonata/config.json`.
 
 ```bash
-notion-code setup
+sonata setup
 ```
 
-### `notion-code plan`
+### `sonata plan`
 
 **Phase 1: Collaborative Planning** - Create a PRD with AI assistance.
 
 ```bash
-notion-code plan                    # Interactive ticket selection
-notion-code plan --ticket abc123    # Specific ticket
-notion-code plan -d ./my-project    # Different directory
+sonata plan                    # Interactive ticket selection
+sonata plan --ticket abc123    # Specific ticket
+sonata plan -d ./my-project    # Different directory
 ```
 
 This opens an interactive session where you and the AI collaborate to create a detailed implementation plan before any code is written.
 
-### `notion-code run`
+### `sonata run`
 
 **HITL (Human-in-the-Loop) mode** - Run a single iteration.
 
 ```bash
-notion-code run                     # Normal run
-notion-code run -y                  # Skip confirmations
-notion-code run --ticket abc123     # Specific ticket
-notion-code run -d ./my-project     # Different directory
+sonata run                     # Normal run
+sonata run -y                  # Skip confirmations
+sonata run --ticket abc123     # Specific ticket
+sonata run -d ./my-project     # Different directory
 ```
 
 This is the safest way to use Ralph. You watch the output and can intervene if needed.
 
-### `notion-code loop [iterations]`
+### `sonata loop [iterations]`
 
 **AFK (Away From Keyboard) mode** - Run multiple iterations autonomously.
 
 ```bash
-notion-code loop          # Use default max iterations
-notion-code loop 20       # Run up to 20 iterations
-notion-code loop --hitl   # Pause after each iteration for confirmation
+sonata loop          # Use default max iterations
+sonata loop 20       # Run up to 20 iterations
+sonata loop --hitl   # Pause after each iteration for confirmation
 ```
 
 The loop continues until:
@@ -226,7 +226,7 @@ The loop continues until:
 - Max iterations reached
 - An error occurs
 
-### `notion-code status`
+### `sonata status`
 
 Show comprehensive current state:
 - Configuration status
@@ -237,8 +237,8 @@ Show comprehensive current state:
 - Prerequisites check
 
 ```bash
-notion-code status
-notion-code status -d ./my-project
+sonata status
+sonata status -d ./my-project
 ```
 
 ## How It Works
@@ -274,7 +274,7 @@ Each iteration:
 
 ### Session Management
 
-Session state is stored in `.notion-code/session.json` per project:
+Session state is stored in `.sonata/session.json` per project:
 - Ticket ID being worked on
 - Current branch
 - Iteration count
@@ -284,7 +284,7 @@ This enables resuming work across CLI invocations and auto-detecting matching br
 
 ### Git Workflow
 
-When configured, notion-code will:
+When configured, sonata will:
 1. Create a new branch from base (e.g., `task/add-auth-abc123`)
 2. Commit changes during each iteration
 3. Create a PR when all tasks are complete
@@ -296,8 +296,8 @@ Use a Notion kanban board as your task source.
 ### One-time Setup
 
 ```bash
-# 1. Configure notion-code with your Notion board
-notion-code setup
+# 1. Configure sonata with your Notion board
+sonata setup
 # - Select "Yes" to connect Notion
 # - Enter your database ID (from the Notion board URL)
 # - Configure status column names to match your board
@@ -308,7 +308,7 @@ opencode mcp auth notion
 
 ### Configuration
 
-The tool stores Notion settings in `~/.notion-code/config.json`:
+The tool stores Notion settings in `~/.sonata/config.json`:
 
 ```json
 {
@@ -336,8 +336,8 @@ The tool stores Notion settings in `~/.notion-code/config.json`:
 
 ```bash
 cd ~/projects/any-project
-notion-code plan    # Create PRD from Notion ticket
-notion-code run     # Implement PRD steps
+sonata plan    # Create PRD from Notion ticket
+sonata run     # Implement PRD steps
 ```
 
 The tool automatically:

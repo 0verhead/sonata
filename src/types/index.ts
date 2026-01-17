@@ -16,7 +16,7 @@ export const NotionTaskSchema = z.object({
 export type NotionTask = z.infer<typeof NotionTaskSchema>;
 
 /**
- * User configuration stored in ~/.notion-code/config.json
+ * User configuration stored in ~/.sonata/config.json
  */
 export const ConfigSchema = z.object({
   mode: z.enum(["local", "notion"]).optional(),
