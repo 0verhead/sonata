@@ -1,4 +1,4 @@
-import { runOpenCode } from "./opencode.js";
+import { runOpenCodeCli } from "./opencode.js";
 
 /**
  * Ticket info returned from Notion queries via opencode
@@ -72,33 +72,58 @@ export async function fetchTicketsViaMcp(
   boardId: string,
   statusColumn: { todo: string; inProgress: string; done: string },
   cwd: string,
-  includeInProgress: boolean = false
+  includeInProgress: boolean = false,
+  viewId?: string
 ): Promise<TicketInfo[]> {
-  const statusFilter = includeInProgress
-    ? `"${statusColumn.todo}" OR "${statusColumn.inProgress}"`
-    : `"${statusColumn.todo}"`;
+  const statusValues = includeInProgress
+    ? [statusColumn.todo, statusColumn.inProgress]
+    : [statusColumn.todo];
+  
+  const statusList = statusValues.map(s => `"${s}"`).join(" or ");
+  
+  // Build the URL with optional view parameter
+  const notionUrl = viewId
+    ? `https://notion.so/${boardId}?v=${viewId}`
+    : boardId;
+  
+  const viewInstruction = viewId
+    ? `This database has multiple views. Use view ID ${viewId} to get the correct data source.`
+    : "";
   
   const prompt = `
-Use the Notion MCP tools to fetch tickets from database with ID: ${boardId}
+Use notion-fetch to get the database: ${notionUrl}
+${viewInstruction}
+The notion-fetch response will show the database pages. Look through ALL pages listed.
 
-1. Use notion-fetch to get the database and see all pages
-2. List all tickets that have status ${statusFilter}
+Find ALL pages where the Status property equals ${statusList}.
 
-For EACH ticket found, output ONE line in this EXACT format:
+For EACH matching ticket, output ONE line in this EXACT format:
 TICKET|page-id|status|ticket title|https://notion.so/page-id
 
-Where "status" is the actual status value (e.g., "${statusColumn.todo}" or "${statusColumn.inProgress}").
-
-Output ONLY the TICKET lines, nothing else. Do NOT output example lines.
+IMPORTANT RULES:
+- Go through EVERY page in the response - don't stop early
+- Output ALL matching tickets, not just first 10
+- Do NOT use notion-search - just use the fetch response
+- Do NOT output example lines - only real tickets
+- At the end, output: TOTAL|<number> with the count of tickets you found
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 120000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 180000 });
 
   if (!result.success) {
     throw new Error(`Failed to fetch tickets: ${result.error}`);
   }
 
   const tickets = parseTicketLines(result.output);
+  
+  // Check if AI reported a total count for verification
+  const totalMatch = result.output.match(/TOTAL\|(\d+)/);
+  if (totalMatch) {
+    const reportedTotal = parseInt(totalMatch[1], 10);
+    if (reportedTotal !== tickets.length) {
+      console.warn(`[notion] AI reported ${reportedTotal} tickets but parsed ${tickets.length}`);
+    }
+  }
   
   if (tickets.length === 0) {
     console.error("No tickets found in output. Raw output:");
@@ -129,7 +154,7 @@ NO_PRD
 Nothing else.
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 60000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 60000 });
 
   if (!result.success) {
     console.error(`[notion] PRD check failed: ${result.error}`);
@@ -176,7 +201,7 @@ PAGE_CONTENT_END
 Output ONLY the markers and content, nothing else before or after.
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 120000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 120000 });
 
   if (!result.success) {
     console.error(`[notion] Failed to fetch page: ${result.error}`);
@@ -273,7 +298,7 @@ If creation failed, output:
 FAILED|reason
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 120000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 120000 });
 
   if (!result.success) {
     throw new Error(`Failed to create PRD: ${result.error}`);
@@ -317,7 +342,7 @@ Return "SUCCESS" if the update was successful, or "FAILED: reason" if it failed.
 Output ONLY the status word, nothing else.
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 60000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 60000 });
 
   if (!result.success) {
     console.warn(`Failed to update ticket status: ${result.error}`);
@@ -347,7 +372,7 @@ Return "SUCCESS" if the update was successful, or "FAILED: reason" if it failed.
 Output ONLY the status word, nothing else.
 `.trim();
 
-  const result = await runOpenCode(prompt, { cwd, timeoutMs: 60000 });
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 60000 });
 
   if (!result.success) {
     console.warn(`Failed to update PRD: ${result.error}`);
@@ -365,9 +390,10 @@ export async function fetchReadyTicketsViaMcp(
   boardId: string,
   statusColumn: { todo: string; inProgress: string; done: string },
   cwd: string,
-  includeInProgress: boolean = false
+  includeInProgress: boolean = false,
+  viewId?: string
 ): Promise<TicketInfo[]> {
-  const allTickets = await fetchTicketsViaMcp(boardId, statusColumn, cwd, includeInProgress);
+  const allTickets = await fetchTicketsViaMcp(boardId, statusColumn, cwd, includeInProgress, viewId);
   
   // Check each ticket for PRD (sequentially to avoid rate limits)
   const readyTickets: TicketInfo[] = [];
@@ -383,4 +409,60 @@ export async function fetchReadyTicketsViaMcp(
   }
   
   return readyTickets;
+}
+
+/**
+ * Search for additional tickets that might have been missed
+ * Uses broader search queries to find more tickets
+ */
+export async function fetchMoreTicketsViaMcp(
+  boardId: string,
+  statusColumn: { todo: string; inProgress: string; done: string },
+  cwd: string,
+  excludeIds: string[],
+  viewId?: string
+): Promise<TicketInfo[]> {
+  const excludeList = excludeIds.length > 0 
+    ? `\nALREADY FOUND (do NOT include these): ${excludeIds.join(", ")}`
+    : "";
+  
+  const notionUrl = viewId
+    ? `https://notion.so/${boardId}?v=${viewId}`
+    : boardId;
+  
+  const prompt = `
+TASK: Find MORE tickets with Status = "${statusColumn.todo}" that may have been missed.
+
+Database: ${notionUrl}
+${excludeList}
+
+STRATEGY:
+1. Get the data source URL (collection://...) for this database
+2. Use notion-search with various queries to find tickets:
+   - Search for common German words: "fahrzeug", "fahrer", "nutzer", "kosten", "daten"
+   - Search for common English words: "feature", "bug", "update", "fix", "add"
+   - Search for names: person names that might appear in tickets
+   - Search for technical terms: "api", "ui", "export", "import", "tabelle"
+3. For each search result, check if Status = "${statusColumn.todo}"
+4. Only include NEW tickets not in the exclude list
+
+OUTPUT FORMAT - For each NEW ticket found:
+TICKET|page-id|status|title|https://notion.so/page-id
+
+Do multiple searches. Output ALL new tickets found.
+At the end: TOTAL|<number>
+`.trim();
+
+  const result = await runOpenCodeCli(prompt, { cwd, timeoutMs: 300000 });
+
+  if (!result.success) {
+    console.error(`[notion] Failed to fetch more tickets: ${result.error}`);
+    return [];
+  }
+
+  const tickets = parseTicketLines(result.output);
+  
+  // Filter out any that were in the exclude list (in case AI included them anyway)
+  const excludeSet = new Set(excludeIds);
+  return tickets.filter(t => !excludeSet.has(t.id));
 }

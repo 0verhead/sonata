@@ -2,7 +2,7 @@ import * as p from "@clack/prompts";
 import chalk from "chalk";
 import { loadConfig, configExists } from "../lib/config.js";
 import {
-  runOpenCode,
+  runOpenCodeCli,
   buildImplementationPrompt,
   checkOpenCodeInstalled,
   killActiveProcess,
@@ -185,7 +185,8 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
         config.notion.boardId!,
         config.notion.statusColumn,
         cwd,
-        true // Include "In Progress" tickets for resume capability
+        true, // Include "In Progress" tickets for resume capability
+        config.notion.viewId
       );
     } catch (err) {
       s.stop("Failed to fetch tickets");
@@ -381,7 +382,7 @@ export async function runCommand(options: RunOptions = {}): Promise<void> {
   console.log(chalk.dim("-".repeat(60)));
   console.log();
 
-  const result = await runOpenCode(prompt, { cwd });
+  const result = await runOpenCodeCli(prompt, { cwd });
 
   console.log();
   console.log(chalk.dim("-".repeat(60)));
