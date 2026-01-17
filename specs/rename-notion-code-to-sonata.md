@@ -1,10 +1,10 @@
 ---
 id: rename-notion-code-to-sonata
 title: Rename notion-code to sonata
-status: in-progress
+status: done
 priority: high
 created: 2026-01-17T00:00:00.000Z
-updated: 2026-01-17T20:00:00.000Z
+updated: 2026-01-17T21:00:00.000Z
 ---
 
 ## Summary
@@ -19,7 +19,7 @@ Rename the project from "notion-code" to "sonata" across all source files, confi
 - [x] Step 6: Update `templates/PROMPT.md` - change documentation reference
 - [x] Step 7: Update `README.md` - change all ~48 references including title, architecture diagram, config paths, git URL (`git@github.com:0verhead/sonata.git`), and command examples
 - [x] Step 8: Delete `specs/local-mode-feature.md`
-- [ ] Step 9: Run `npm install` to regenerate `package-lock.json`, build, and verify CLI works with `sonata` command
+- [x] Step 9: Run `npm install` to regenerate `package-lock.json`, build, and verify CLI works with `sonata` command
 
 ## Files
 
