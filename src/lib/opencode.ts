@@ -9,6 +9,23 @@ import type { OpenCodeResult } from '../types/index.js';
 const COMPLETE_SIGNAL = 'PRD_COMPLETE_SIGNAL_7x9k2m';
 const COMPLETE_SIGNAL_REGEX = /^\s*PRD_COMPLETE_SIGNAL_7x9k2m\s*$/m;
 
+// Signal for manual testing checkpoints - agent pauses and waits for human feedback
+// Format: AWAITING_HUMAN_7x9k2m: <description of what human should do>
+const AWAITING_HUMAN_SIGNAL = 'AWAITING_HUMAN_7x9k2m';
+const AWAITING_HUMAN_REGEX = /^\s*AWAITING_HUMAN_7x9k2m:\s*(.+?)\s*$/m;
+
+// Maximum spec size to include in prompt to avoid context exhaustion
+// With large specs + multiple tool calls (especially screenshots), context can fill up
+const MAX_SPEC_CHARS = 15_000;
+
+/**
+ * Extract awaiting human description from opencode output
+ */
+function extractAwaitingHuman(output: string): string | undefined {
+  const match = output.match(AWAITING_HUMAN_REGEX);
+  return match?.[1]?.trim();
+}
+
 /**
  * Extract task title from opencode output
  * Looks for patterns like:
@@ -68,11 +85,13 @@ export async function runOpenCodeCli(
     });
 
     proc.on('close', (code) => {
+      const awaitingDescription = extractAwaitingHuman(output);
       resolve({
         success: code === 0,
         output,
         isComplete: COMPLETE_SIGNAL_REGEX.test(output),
         taskTitle: extractTaskTitle(output),
+        awaitingHuman: awaitingDescription ? { description: awaitingDescription } : undefined,
       });
     });
 
@@ -211,6 +230,9 @@ export function buildImplementationPrompt(options: {
 }): string {
   const { ticketTitle, ticketUrl, prdContent, prdPageId, progressFile = 'progress.txt' } = options;
 
+  // Truncate PRD to prevent context exhaustion with large specs + multiple tool calls
+  const truncatedPrd = truncateSpec(prdContent);
+
   // Add PRD update instruction if we have the page ID
   const prdUpdateInstruction = prdPageId
     ? `
@@ -227,7 +249,7 @@ PRD for: ${ticketTitle}
 Source: ${ticketUrl}
 
 ---
-${prdContent}
+${truncatedPrd}
 ---
 
 INSTRUCTIONS:
@@ -255,6 +277,10 @@ You are implementing this PRD task by task.
      - \`npm run format:check\` - verify formatting (use \`npm run format\` to auto-fix)
      - Run tests if applicable
    - Fix any issues before continuing
+   
+   IMPORTANT: When using Chrome DevTools MCP, limit screenshots to 2-3 max per
+   iteration to avoid context exhaustion. Prefer snapshots (accessibility tree)
+   over screenshots when possible.
 
 4. UPDATE ${progressFile} with:
    - Which task you completed
@@ -267,6 +293,12 @@ ${prdUpdateInstruction}
 
 If ALL tasks in the PRD are complete and feedback loops pass:
   Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
+
+If the current task requires MANUAL TESTING by a human (e.g., E2E tests in a real app):
+  1. Complete all automated work first
+  2. Output this signal with a description: ${AWAITING_HUMAN_SIGNAL}: <what the human should test>
+  3. The loop will pause and prompt the developer for feedback
+  4. Check ${progressFile} in the next iteration to see their feedback
 
 IMPORTANT: Only work on ONE task per session.
 `.trim();
@@ -421,6 +453,81 @@ When X, Y, and Z are complete and tests pass.
 }
 
 /**
+ * Truncate a spec/PRD to fit within context limits.
+ *
+ * Strategy:
+ * 1. Keep frontmatter (YAML header)
+ * 2. Keep summary/overview sections
+ * 3. Keep uncompleted tasks (- [ ])
+ * 4. Remove completed tasks (- [x])
+ * 5. Keep other important sections up to the limit
+ *
+ * This prevents context exhaustion when specs are large and
+ * tool calls (especially screenshots) consume significant context.
+ */
+export function truncateSpec(content: string, maxChars: number = MAX_SPEC_CHARS): string {
+  if (content.length <= maxChars) {
+    return content;
+  }
+
+  const lines = content.split('\n');
+  const result: string[] = [];
+  let currentLength = 0;
+  let inFrontmatter = false;
+  let frontmatterEnded = false;
+  let skippedCompletedTasks = 0;
+
+  for (const line of lines) {
+    // Track frontmatter
+    if (line.trim() === '---') {
+      if (!frontmatterEnded) {
+        if (inFrontmatter) {
+          frontmatterEnded = true;
+        }
+        inFrontmatter = !inFrontmatter;
+      }
+      result.push(line);
+      currentLength += line.length + 1;
+      continue;
+    }
+
+    // Always include frontmatter
+    if (inFrontmatter) {
+      result.push(line);
+      currentLength += line.length + 1;
+      continue;
+    }
+
+    // Skip completed tasks to save space (matches "- [x]" with optional leading whitespace)
+    if (/^\s*-\s*\[x\]/i.test(line)) {
+      skippedCompletedTasks++;
+      continue;
+    }
+
+    // Check if adding this line would exceed the limit
+    if (currentLength + line.length + 1 > maxChars - 200) {
+      // Leave room for truncation notice
+      break;
+    }
+
+    result.push(line);
+    currentLength += line.length + 1;
+  }
+
+  // Add truncation notice if we actually truncated
+  if (result.length < lines.length) {
+    result.push(
+      '',
+      `[... spec truncated for context efficiency ...]`,
+      `[${skippedCompletedTasks} completed tasks omitted]`,
+      `[Full spec available at the source filepath]`
+    );
+  }
+
+  return result.join('\n');
+}
+
+/**
  * Build the implementation prompt for local spec-based execution
  */
 export function buildLocalImplementationPrompt(options: {
@@ -429,27 +536,30 @@ export function buildLocalImplementationPrompt(options: {
   specFilepath: string;
   progressFile?: string;
 }): string {
-  const { specTitle, specContent, specFilepath, progressFile = 'progress.txt' } = options;
+  const { specTitle, specFilepath, progressFile = 'progress.txt' } = options;
+
+  // NOTE: We intentionally do NOT include specContent in the prompt.
+  // Large specs combined with tool responses (especially screenshots from
+  // Chrome DevTools MCP) can exhaust the context window, causing premature
+  // iteration termination. Instead, we reference the spec by filepath and
+  // let the AI read only what it needs.
 
   return `
-@${progressFile}
+TASK: Implement the next task from the spec
 
-Spec for: ${specTitle}
-Source: ${specFilepath}
-
----
-${specContent}
----
+Spec: ${specTitle}
+Spec file: @${specFilepath}
+Progress: @${progressFile}
 
 INSTRUCTIONS:
 You are implementing this spec task by task.
 
-1. READ the spec and ${progressFile} to understand:
-   - What tasks exist
-   - What has already been completed
+1. READ the spec file and ${progressFile} to understand:
+   - What tasks exist (look for "- [ ]" checkboxes)
+   - What has already been completed (look for "- [x]" checkboxes)
    - What remains
 
-2. CHOOSE the next task based on this priority order:
+2. CHOOSE the next uncompleted task based on this priority order:
    1. Architectural decisions and core abstractions
    2. Integration points between modules
    3. Unknown unknowns and spike work
@@ -466,6 +576,10 @@ You are implementing this spec task by task.
      - \`npm run format:check\` - verify formatting (use \`npm run format\` to auto-fix)
      - Run tests if applicable
    - Fix any issues before continuing
+   
+   IMPORTANT: When using Chrome DevTools MCP, limit screenshots to 2-3 max per
+   iteration to avoid context exhaustion. Prefer snapshots (accessibility tree)
+   over screenshots when possible.
 
 4. UPDATE ${progressFile} with:
    - Which task you completed
@@ -483,6 +597,12 @@ You are implementing this spec task by task.
 If ALL tasks in the spec are complete and feedback loops pass:
   - Update the spec status to "done" in the frontmatter
   - Output EXACTLY this signal on its own line: ${COMPLETE_SIGNAL}
+
+If the current task requires MANUAL TESTING by a human (e.g., E2E tests in a real app):
+  1. Complete all automated work first
+  2. Output this signal with a description: ${AWAITING_HUMAN_SIGNAL}: <what the human should test>
+  3. The loop will pause and prompt the developer for feedback
+  4. Check ${progressFile} in the next iteration to see their feedback
 
 IMPORTANT: Only work on ONE task per session.
 `.trim();

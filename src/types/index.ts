@@ -70,6 +70,12 @@ export const OpenCodeResultSchema = z.object({
   isComplete: z.boolean(),
   error: z.string().optional(),
   taskTitle: z.string().optional(),
+  /** Set when agent outputs AWAITING_HUMAN signal for manual testing checkpoints */
+  awaitingHuman: z
+    .object({
+      description: z.string(),
+    })
+    .optional(),
 });
 
 export type OpenCodeResult = z.infer<typeof OpenCodeResultSchema>;

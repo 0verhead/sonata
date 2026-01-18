@@ -114,3 +114,30 @@ export function getCurrentIteration(cwd: string = process.cwd()): number {
   }
   return matches.length;
 }
+
+/**
+ * Append human feedback after an awaiting-human checkpoint
+ */
+export function appendHumanFeedback(
+  checkpoint: string,
+  feedback: string,
+  cwd: string = process.cwd()
+): void {
+  const progressPath = getProgressPath(cwd);
+
+  // Initialize if doesn't exist
+  if (!fs.existsSync(progressPath)) {
+    initProgress(cwd);
+  }
+
+  const timestamp = new Date().toISOString();
+  const feedbackText = `
+## Human Feedback - ${timestamp}
+**Checkpoint:** ${checkpoint}
+**Feedback:** ${feedback}
+
+---
+`;
+
+  fs.appendFileSync(progressPath, feedbackText, 'utf8');
+}

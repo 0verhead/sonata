@@ -33,6 +33,7 @@ import {
   getCurrentIteration,
   markProgressComplete,
   deleteProgress,
+  appendHumanFeedback,
 } from '../lib/progress.js';
 import {
   loadCurrentSession,
@@ -453,6 +454,34 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
       break;
     }
 
+    // Check for awaiting human (manual testing checkpoint)
+    if (result.awaitingHuman) {
+      console.log();
+      p.log.warn(chalk.yellow.bold('Agent is awaiting human action'));
+      p.log.message(chalk.dim(`Checkpoint: ${result.awaitingHuman.description}`));
+      console.log();
+
+      const feedback = await p.text({
+        message: 'Enter feedback (or press Enter to continue with no feedback):',
+        placeholder: 'e.g., "Tested successfully, formatting preserved"',
+      });
+
+      if (isCancelled(feedback)) {
+        p.log.info('Loop paused by user');
+        break;
+      }
+
+      // Record feedback in progress file for next iteration
+      const feedbackText =
+        typeof feedback === 'string' && feedback.trim()
+          ? feedback.trim()
+          : 'Acknowledged, continue.';
+      appendHumanFeedback(result.awaitingHuman.description, feedbackText, cwd);
+
+      p.log.info('Feedback recorded, continuing to next iteration...');
+      continue; // Don't count this as a completed iteration - the task isn't done yet
+    }
+
     // Check for completion
     if (result.isComplete) {
       console.log();
@@ -698,6 +727,34 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
       p.log.error(`opencode failed: ${result.error}`);
       p.log.info(`Stopped at iteration ${i}`);
       break;
+    }
+
+    // Check for awaiting human (manual testing checkpoint)
+    if (result.awaitingHuman) {
+      console.log();
+      p.log.warn(chalk.yellow.bold('Agent is awaiting human action'));
+      p.log.message(chalk.dim(`Checkpoint: ${result.awaitingHuman.description}`));
+      console.log();
+
+      const feedback = await p.text({
+        message: 'Enter feedback (or press Enter to continue with no feedback):',
+        placeholder: 'e.g., "Tested successfully, formatting preserved"',
+      });
+
+      if (isCancelled(feedback)) {
+        p.log.info('Loop paused by user');
+        break;
+      }
+
+      // Record feedback in progress file for next iteration
+      const feedbackText =
+        typeof feedback === 'string' && feedback.trim()
+          ? feedback.trim()
+          : 'Acknowledged, continue.';
+      appendHumanFeedback(result.awaitingHuman.description, feedbackText, cwd);
+
+      p.log.info('Feedback recorded, continuing to next iteration...');
+      continue; // Don't count this as a completed iteration - the task isn't done yet
     }
 
     // Check for completion
