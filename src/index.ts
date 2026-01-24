@@ -70,6 +70,7 @@ program
   .option('--ticket <id>', 'Ticket ID to work on (bypass status filter)')
   .option('--local', 'Use local specs/ folder instead of Notion')
   .option('--notion', 'Use Notion board')
+  .option('--auto', 'Skip initial spec selection (use smart ranking to pick spec)', false)
   .action(async (iterations, options) => {
     await loopCommand({
       iterations: iterations ? Number.parseInt(iterations, 10) : undefined,
@@ -78,6 +79,7 @@ program
       ticketId: options.ticket,
       local: options.local,
       notion: options.notion,
+      auto: options.auto,
     });
   });
 

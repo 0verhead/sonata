@@ -60,6 +60,7 @@ interface LoopOptions {
   ticketId?: string;
   local?: boolean; // Use local specs mode
   notion?: boolean; // Use Notion mode
+  auto?: boolean; // Skip initial spec selection (use smart ranking)
 }
 
 /**
@@ -107,7 +108,7 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
 
   // Branch to local or Notion workflow
   if (resolvedMode === 'local') {
-    await runLocalLoopCommand({ ...options, cwd, iterations, hitl });
+    await runLocalLoopCommand({ ...options, cwd, iterations, hitl, auto: options.auto });
     return;
   }
 
@@ -559,9 +560,14 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
  *
  * After completing a spec and creating a PR, automatically selects the next
  * spec using the ranking algorithm and continues the loop.
+ *
+ * With --auto flag, skips the initial spec selection prompt and uses
+ * smart ranking to pick the best spec to work on.
  */
-async function runLocalLoopCommand(options: LoopOptions & { iterations: number }): Promise<void> {
-  const { iterations, cwd = process.cwd(), hitl = false } = options;
+async function runLocalLoopCommand(
+  options: LoopOptions & { iterations: number; auto?: boolean }
+): Promise<void> {
+  const { iterations, cwd = process.cwd(), hitl = false, auto = false } = options;
 
   // Load config for defaults (loadConfig returns sensible defaults if no config file exists)
   const config = loadConfig();
@@ -599,27 +605,46 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     return;
   }
 
-  // Let user select a spec (prioritize in-progress)
-  const specOptions = availableSpecs.map((spec) => ({
-    value: spec.id,
-    label: spec.status === 'in-progress' ? `[IN PROGRESS] ${spec.title}` : `[TODO] ${spec.title}`,
-    hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
-  }));
+  // Select spec: use smart ranking with --auto, otherwise let user choose
+  let selectedSpec: NonNullable<ReturnType<typeof getSpec>>;
 
-  const selectedSpecId = await p.select({
-    message: 'Select a spec to implement:',
-    options: specOptions,
-  });
+  if (auto) {
+    // Use smart ranking to automatically select the best spec
+    const rankedSpec = getNextSpec(cwd);
+    if (!rankedSpec) {
+      p.note(
+        'No actionable specs found.\n' + 'Run `sonata plan --local` to create a spec first.',
+        'No Ready Specs'
+      );
+      p.outro('Create a spec with `sonata plan --local`');
+      return;
+    }
+    selectedSpec = rankedSpec;
+    p.log.info(`Auto-selected spec: ${selectedSpec.title}`);
+  } else {
+    // Let user select a spec (prioritize in-progress)
+    const specOptions = availableSpecs.map((spec) => ({
+      value: spec.id,
+      label: spec.status === 'in-progress' ? `[IN PROGRESS] ${spec.title}` : `[TODO] ${spec.title}`,
+      hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
+    }));
 
-  if (isCancelled(selectedSpecId)) {
-    p.cancel('Cancelled');
-    process.exit(0);
-  }
+    const selectedSpecId = await p.select({
+      message: 'Select a spec to implement:',
+      options: specOptions,
+    });
 
-  const selectedSpec = getSpec(cwd, String(selectedSpecId));
-  if (!selectedSpec) {
-    p.cancel('Spec not found');
-    process.exit(1);
+    if (isCancelled(selectedSpecId)) {
+      p.cancel('Cancelled');
+      process.exit(0);
+    }
+
+    const spec = getSpec(cwd, String(selectedSpecId));
+    if (!spec) {
+      p.cancel('Spec not found');
+      process.exit(1);
+    }
+    selectedSpec = spec;
   }
 
   // Confirm before starting AFK mode
