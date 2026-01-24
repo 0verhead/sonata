@@ -319,3 +319,40 @@ export function getSpecStats(cwd: string): {
     done: specs.filter((s) => s.status === 'done').length,
   };
 }
+
+// =============================================================================
+// Task Classification for Spec Ranking
+// =============================================================================
+
+/**
+ * Keywords indicating high-risk/architectural work that should be done first ("fail fast")
+ */
+export const HIGH_RISK_KEYWORDS = [
+  'architecture',
+  'schema',
+  'design',
+  'integration',
+  'api',
+  'contract',
+  'spike',
+  'unknown',
+  'core',
+  'abstraction',
+  'foundation',
+  'refactor',
+] as const;
+
+/**
+ * Keywords indicating low-risk/polish work that can be saved for later
+ */
+export const LOW_RISK_KEYWORDS = [
+  'polish',
+  'fix',
+  'cleanup',
+  'style',
+  'typo',
+  'docs',
+  'ui',
+  'button',
+  'tweak',
+] as const;
