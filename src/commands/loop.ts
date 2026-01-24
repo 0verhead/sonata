@@ -50,6 +50,8 @@ import {
   updateSpecStatus,
   countSpecTasks,
   getNextSpec,
+  getSpecProgress,
+  getSpecRiskRatio,
 } from '../lib/specs.js';
 import { isCancelled } from '../types/index.js';
 
@@ -623,11 +625,24 @@ async function runLocalLoopCommand(
     p.log.info(`Auto-selected spec: ${selectedSpec.title}`);
   } else {
     // Let user select a spec (prioritize in-progress)
-    const specOptions = availableSpecs.map((spec) => ({
-      value: spec.id,
-      label: spec.status === 'in-progress' ? `[IN PROGRESS] ${spec.title}` : `[TODO] ${spec.title}`,
-      hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
-    }));
+    const specOptions = availableSpecs.map((spec) => {
+      const progress = getSpecProgress(spec);
+      const riskRatio = getSpecRiskRatio(spec);
+      const riskPercent = Math.round(riskRatio * 100);
+
+      // Build status tag: [IN PROGRESS 75%] or [TODO 0%]
+      const statusTag =
+        spec.status === 'in-progress' ? `[IN PROGRESS ${progress}%]` : `[TODO ${progress}%]`;
+
+      // Build risk tag if there's any risk: [RISK: 40%]
+      const riskTag = riskPercent > 0 ? ` [RISK: ${riskPercent}%]` : '';
+
+      return {
+        value: spec.id,
+        label: `${statusTag}${riskTag} ${spec.title}`,
+        hint: spec.priority ? `Priority: ${spec.priority}` : undefined,
+      };
+    });
 
     const selectedSpecId = await p.select({
       message: 'Select a spec to implement:',
