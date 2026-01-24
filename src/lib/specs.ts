@@ -356,3 +356,37 @@ export const LOW_RISK_KEYWORDS = [
   'button',
   'tweak',
 ] as const;
+
+/**
+ * Classification result for a task
+ */
+export type TaskRiskLevel = 'high' | 'low' | 'normal';
+
+/**
+ * Classify a task based on keyword matching
+ *
+ * @param taskText - The text of the task to classify
+ * @returns 'high' if high-risk keywords found, 'low' if low-risk keywords found, 'normal' otherwise
+ *
+ * If both high and low risk keywords are found, high-risk takes precedence
+ * to ensure we "fail fast" on risky work.
+ */
+export function classifyTask(taskText: string): TaskRiskLevel {
+  const lowerText = taskText.toLowerCase();
+
+  // Check for high-risk keywords first (they take precedence)
+  for (const keyword of HIGH_RISK_KEYWORDS) {
+    if (lowerText.includes(keyword)) {
+      return 'high';
+    }
+  }
+
+  // Check for low-risk keywords
+  for (const keyword of LOW_RISK_KEYWORDS) {
+    if (lowerText.includes(keyword)) {
+      return 'low';
+    }
+  }
+
+  return 'normal';
+}
