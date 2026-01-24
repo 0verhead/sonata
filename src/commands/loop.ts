@@ -44,7 +44,13 @@ import {
   clearSession,
   initSession,
 } from '../lib/session.js';
-import { getSpec, getSpecsByStatus, updateSpecStatus, countSpecTasks } from '../lib/specs.js';
+import {
+  getSpec,
+  getSpecsByStatus,
+  updateSpecStatus,
+  countSpecTasks,
+  getNextSpec,
+} from '../lib/specs.js';
 import { isCancelled } from '../types/index.js';
 
 interface LoopOptions {
@@ -550,6 +556,9 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
 
 /**
  * Run local loop command - implement multiple spec steps autonomously
+ *
+ * After completing a spec and creating a PR, automatically selects the next
+ * spec using the ranking algorithm and continues the loop.
  */
 async function runLocalLoopCommand(options: LoopOptions & { iterations: number }): Promise<void> {
   const { iterations, cwd = process.cwd(), hitl = false } = options;
@@ -607,67 +616,24 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     process.exit(0);
   }
 
-  let selectedSpec = getSpec(cwd, String(selectedSpecId));
+  const selectedSpec = getSpec(cwd, String(selectedSpecId));
   if (!selectedSpec) {
     p.cancel('Spec not found');
     process.exit(1);
   }
 
-  // Create git branch if needed
-  let branch = '';
-  if (inGitRepo && config.git.createBranch) {
-    const currentBranch = await getCurrentBranch(cwd);
-    if (currentBranch === config.git.baseBranch) {
-      const safeBranchName = selectedSpec.title
-        .toLowerCase()
-        .replaceAll(/[^a-z0-9]+/g, '-')
-        .replaceAll(/^-|-$/g, '')
-        .slice(0, 50);
-      branch = `task/${safeBranchName}`;
-
-      s.start(`Creating branch ${branch}...`);
-      await createBranch(branch, config.git.baseBranch, cwd);
-      s.stop(`Switched to branch ${branch}`);
-    } else {
-      branch = currentBranch;
-    }
-  }
-
-  // Initialize session
-  initSession(cwd, {
-    ticketId: selectedSpec.id,
-    ticketTitle: selectedSpec.title,
-    ticketUrl: selectedSpec.filepath,
-    branch,
-  });
-
-  // Update spec status to in-progress if it was todo
-  if (selectedSpec.status === 'todo') {
-    updateSpecStatus(cwd, selectedSpec.id, 'in-progress');
-    selectedSpec = getSpec(cwd, selectedSpec.id)!;
-  }
-
-  // Initialize progress if needed
-  const startIteration = getCurrentIteration(cwd);
-  if (!progressExists(cwd)) {
-    initProgress(cwd, `Spec: ${selectedSpec.title}`);
-    p.log.info('Initialized progress.txt');
-  }
-
-  // Get initial task counts
-  let tasks = countSpecTasks(selectedSpec.content);
-
   // Confirm before starting AFK mode
   if (!hitl) {
+    const tasks = countSpecTasks(selectedSpec.content);
     p.note(
       `Spec: ${selectedSpec.title}\n` +
         `Tasks: ${tasks.completed}/${tasks.total} complete\n` +
-        `Max iterations: ${iterations}\n` +
-        `Branch: ${branch || 'N/A'}\n\n` +
+        `Max iterations: ${iterations}\n\n` +
         'The loop will run autonomously until:\n' +
-        '- All spec tasks are complete\n' +
+        '- All specs are complete\n' +
         '- Max iterations reached\n' +
-        '- An error occurs',
+        '- An error occurs\n\n' +
+        'After completing a spec, the next spec will be selected automatically.',
       'AFK Mode'
     );
 
@@ -682,146 +648,287 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
     }
   }
 
-  // The Ralph Loop
-  console.log();
-  p.log.step(chalk.bold('Starting Ralph loop (local mode)...'));
-  console.log();
+  // Run the spec loop
+  // This loop iterates over specs, not iterations. It exits when:
+  // - Max iterations across all specs is reached
+  // - No more specs to work on
+  // - An error occurs
+  const result = await runSpecLoop({
+    initialSpec: selectedSpec,
+    iterations,
+    cwd,
+    hitl,
+    inGitRepo,
+    config,
+    spinner: s,
+  });
 
-  for (let i = 1; i <= iterations; i++) {
-    // Refresh spec to get latest content
-    selectedSpec = getSpec(cwd, selectedSpec.id)!;
-    tasks = countSpecTasks(selectedSpec.content);
-
-    const currentIteration = startIteration + i;
-
-    console.log(chalk.cyan(`\n${'='.repeat(60)}`));
-    console.log(chalk.cyan.bold(`  Iteration ${i}/${iterations} (total: ${currentIteration})`));
-    console.log(chalk.cyan(`${'='.repeat(60)}\n`));
-
-    // HITL mode: confirm before each iteration
-    if (hitl && i > 1) {
-      const continueLoop = await p.confirm({
-        message: 'Continue to next iteration?',
-        initialValue: true,
-      });
-
-      if (isCancelled(continueLoop) || continueLoop !== true) {
-        p.log.info('Loop paused by user');
-        break;
-      }
-    }
-
-    // Build implementation prompt
-    const prompt = buildLocalImplementationPrompt({
-      specTitle: selectedSpec.title,
-      specContent: selectedSpec.content,
-      specFilepath: selectedSpec.filepath,
-      progressFile: 'progress.txt',
-    });
-
-    // Run opencode
-    incrementIteration(cwd);
-    const result = await runOpenCodeCli(prompt, { cwd });
-
-    console.log();
-
-    // Check for errors
-    if (!result.success) {
-      p.log.error(`opencode failed: ${result.error}`);
-      p.log.info(`Stopped at iteration ${i}`);
+  // Handle final state
+  switch (result.reason) {
+    case 'all_specs_complete': {
+      p.outro(chalk.green(`All specs complete! Total iterations: ${result.totalIterations}`));
       break;
     }
-
-    // Check for awaiting human (manual testing checkpoint)
-    if (result.awaitingHuman) {
+    case 'max_iterations': {
       console.log();
-      p.log.warn(chalk.yellow.bold('Agent is awaiting human action'));
-      p.log.message(chalk.dim(`Checkpoint: ${result.awaitingHuman.description}`));
-      console.log();
+      p.log.warn(`Max iterations (${iterations}) reached`);
+      p.note(
+        'The spec is not yet complete. You can:\n' +
+          '- Run `sonata loop --local` again to continue\n' +
+          '- Run `sonata run --local` for manual control\n' +
+          '- Check progress.txt for current state',
+        'Max Iterations Reached'
+      );
+      p.outro(chalk.yellow(`Stopped after ${result.totalIterations} iterations`));
+      break;
+    }
+    case 'error': {
+      p.outro(chalk.red(`Stopped due to error after ${result.totalIterations} iterations`));
+      break;
+    }
+    case 'user_cancelled': {
+      p.outro(chalk.yellow(`Loop paused by user after ${result.totalIterations} iterations`));
+      break;
+    }
+  }
+}
 
-      const feedback = await p.text({
-        message: 'Enter feedback (or press Enter to continue with no feedback):',
-        placeholder: 'e.g., "Tested successfully, formatting preserved"',
-      });
+interface SpecLoopOptions {
+  initialSpec: NonNullable<ReturnType<typeof getSpec>>;
+  iterations: number;
+  cwd: string;
+  hitl: boolean;
+  inGitRepo: boolean;
+  config: ReturnType<typeof loadConfig>;
+  spinner: ReturnType<typeof p.spinner>;
+}
 
-      if (isCancelled(feedback)) {
-        p.log.info('Loop paused by user');
-        break;
+interface SpecLoopResult {
+  reason: 'all_specs_complete' | 'max_iterations' | 'error' | 'user_cancelled';
+  totalIterations: number;
+}
+
+/**
+ * Run the spec loop - processes specs one at a time, continuing to next spec after completion
+ */
+async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
+  const { iterations, cwd, hitl, inGitRepo, config, spinner: s } = options;
+  let selectedSpec = options.initialSpec;
+
+  // Track total iterations across all specs
+  let totalIterationsUsed = 0;
+
+  // Outer loop: iterate over specs
+  while (totalIterationsUsed < iterations) {
+    // Create git branch if needed (for new spec)
+    let branch = '';
+    if (inGitRepo && config.git.createBranch) {
+      const currentBranch = await getCurrentBranch(cwd);
+      if (currentBranch === config.git.baseBranch) {
+        const safeBranchName = selectedSpec.title
+          .toLowerCase()
+          .replaceAll(/[^a-z0-9]+/g, '-')
+          .replaceAll(/^-|-$/g, '')
+          .slice(0, 50);
+        branch = `task/${safeBranchName}`;
+
+        s.start(`Creating branch ${branch}...`);
+        await createBranch(branch, config.git.baseBranch, cwd);
+        s.stop(`Switched to branch ${branch}`);
+      } else {
+        branch = currentBranch;
       }
-
-      // Record feedback in progress file for next iteration
-      const feedbackText =
-        typeof feedback === 'string' && feedback.trim()
-          ? feedback.trim()
-          : 'Acknowledged, continue.';
-      appendHumanFeedback(result.awaitingHuman.description, feedbackText, cwd);
-
-      p.log.info('Feedback recorded, continuing to next iteration...');
-      continue; // Don't count this as a completed iteration - the task isn't done yet
     }
 
-    // Check for completion
-    if (result.isComplete) {
-      console.log();
-      p.log.success(chalk.green.bold('All spec tasks complete!'));
-      markProgressComplete(cwd);
+    // Initialize session for this spec
+    initSession(cwd, {
+      ticketId: selectedSpec.id,
+      ticketTitle: selectedSpec.title,
+      ticketUrl: selectedSpec.filepath,
+      branch,
+    });
 
-      // Update spec status to done
-      updateSpecStatus(cwd, selectedSpec.id, 'done');
+    // Update spec status to in-progress if it was todo
+    if (selectedSpec.status === 'todo') {
+      updateSpecStatus(cwd, selectedSpec.id, 'in-progress');
+      selectedSpec = getSpec(cwd, selectedSpec.id)!;
+    }
 
-      // Commit the spec status change
-      if (inGitRepo && (await hasChanges(cwd))) {
-        await stageAll(cwd);
-        await commit('docs: mark spec as done', cwd);
-      }
+    // Initialize progress if needed
+    if (!progressExists(cwd)) {
+      initProgress(cwd, `Spec: ${selectedSpec.title}`);
+      p.log.info('Initialized progress.txt');
+    }
 
-      // Create PR
-      if (inGitRepo && config.git.createPR && branch !== config.git.baseBranch) {
-        s.start('Creating pull request...');
-        try {
-          const prTitle = selectedSpec.title;
-          const prUrl = await createPR(
-            prTitle,
-            `Completed via sonata Ralph loop (local mode)\n\nIterations: ${i}\nSee progress.txt for details.`,
-            config.git.baseBranch,
-            cwd
-          );
-          s.stop(`PR created: ${prUrl}`);
-          await switchBranch(config.git.baseBranch, cwd);
-          p.log.info(`Switched back to ${config.git.baseBranch}`);
-        } catch (error) {
-          s.stop('Failed to create PR');
-          p.log.warn(`Could not create PR: ${error}`);
+    // The Ralph Loop for this spec
+    console.log();
+    p.log.step(chalk.bold(`Starting Ralph loop for: ${selectedSpec.title}`));
+    console.log();
+
+    const remainingIterations = iterations - totalIterationsUsed;
+    let specCompleted = false;
+    let loopError = false;
+    let userCancelled = false;
+
+    for (let i = 1; i <= remainingIterations; i++) {
+      // Refresh spec to get latest content
+      selectedSpec = getSpec(cwd, selectedSpec.id)!;
+      const tasks = countSpecTasks(selectedSpec.content);
+
+      totalIterationsUsed++;
+
+      console.log(chalk.cyan(`\n${'='.repeat(60)}`));
+      console.log(chalk.cyan.bold(`  Iteration ${totalIterationsUsed}/${iterations} (spec: ${i})`));
+      console.log(chalk.cyan(`  Spec: ${selectedSpec.title} (${tasks.completed}/${tasks.total})`));
+      console.log(chalk.cyan(`${'='.repeat(60)}\n`));
+
+      // HITL mode: confirm before each iteration
+      if (hitl && (totalIterationsUsed > 1 || i > 1)) {
+        const continueLoop = await p.confirm({
+          message: 'Continue to next iteration?',
+          initialValue: true,
+        });
+
+        if (isCancelled(continueLoop) || continueLoop !== true) {
+          p.log.info('Loop paused by user');
+          userCancelled = true;
+          break;
         }
       }
 
-      // Clear session and progress
-      clearSession(cwd);
-      deleteProgress(cwd);
+      // Build implementation prompt
+      const prompt = buildLocalImplementationPrompt({
+        specTitle: selectedSpec.title,
+        specContent: selectedSpec.content,
+        specFilepath: selectedSpec.filepath,
+        progressFile: 'progress.txt',
+      });
 
-      // Ensure cleanup before exit
-      killActiveProcess();
+      // Run opencode
+      incrementIteration(cwd);
+      const result = await runOpenCodeCli(prompt, { cwd });
 
-      p.outro(chalk.green(`Completed in ${i} iteration${i === 1 ? '' : 's'}!`));
-      return;
+      console.log();
+
+      // Check for errors
+      if (!result.success) {
+        p.log.error(`opencode failed: ${result.error}`);
+        p.log.info(`Stopped at iteration ${totalIterationsUsed}`);
+        loopError = true;
+        break;
+      }
+
+      // Check for awaiting human (manual testing checkpoint)
+      if (result.awaitingHuman) {
+        console.log();
+        p.log.warn(chalk.yellow.bold('Agent is awaiting human action'));
+        p.log.message(chalk.dim(`Checkpoint: ${result.awaitingHuman.description}`));
+        console.log();
+
+        const feedback = await p.text({
+          message: 'Enter feedback (or press Enter to continue with no feedback):',
+          placeholder: 'e.g., "Tested successfully, formatting preserved"',
+        });
+
+        if (isCancelled(feedback)) {
+          p.log.info('Loop paused by user');
+          userCancelled = true;
+          break;
+        }
+
+        // Record feedback in progress file for next iteration
+        const feedbackText =
+          typeof feedback === 'string' && feedback.trim()
+            ? feedback.trim()
+            : 'Acknowledged, continue.';
+        appendHumanFeedback(result.awaitingHuman.description, feedbackText, cwd);
+
+        p.log.info('Feedback recorded, continuing to next iteration...');
+        // Don't count this as a completed iteration - decrement to retry
+        totalIterationsUsed--;
+        continue;
+      }
+
+      // Check for completion
+      if (result.isComplete) {
+        console.log();
+        p.log.success(chalk.green.bold(`Spec complete: ${selectedSpec.title}`));
+        markProgressComplete(cwd);
+
+        // Update spec status to done
+        updateSpecStatus(cwd, selectedSpec.id, 'done');
+
+        // Commit the spec status change
+        if (inGitRepo && (await hasChanges(cwd))) {
+          await stageAll(cwd);
+          await commit('docs: mark spec as done', cwd);
+        }
+
+        // Create PR
+        if (inGitRepo && config.git.createPR && branch !== config.git.baseBranch) {
+          s.start('Creating pull request...');
+          try {
+            const prTitle = selectedSpec.title;
+            const prUrl = await createPR(
+              prTitle,
+              `Completed via sonata Ralph loop (local mode)\n\nIterations: ${i}\nSee progress.txt for details.`,
+              config.git.baseBranch,
+              cwd
+            );
+            s.stop(`PR created: ${prUrl}`);
+            await switchBranch(config.git.baseBranch, cwd);
+            p.log.info(`Switched back to ${config.git.baseBranch}`);
+          } catch (error) {
+            s.stop('Failed to create PR');
+            p.log.warn(`Could not create PR: ${error}`);
+          }
+        }
+
+        // Clear session and progress for this spec
+        clearSession(cwd);
+        deleteProgress(cwd);
+
+        specCompleted = true;
+        break;
+      }
+
+      p.log.info(`Iteration ${totalIterationsUsed} complete, continuing...`);
     }
 
-    p.log.info(`Iteration ${i} complete, continuing...`);
+    // If user cancelled or error occurred, exit the outer loop
+    if (userCancelled) {
+      killActiveProcess();
+      return { reason: 'user_cancelled', totalIterations: totalIterationsUsed };
+    }
+
+    if (loopError) {
+      killActiveProcess();
+      return { reason: 'error', totalIterations: totalIterationsUsed };
+    }
+
+    // If spec was completed, try to get the next spec
+    if (specCompleted) {
+      const nextSpec = getNextSpec(cwd);
+
+      if (!nextSpec) {
+        // No more specs to work on
+        p.log.success(chalk.green.bold('All actionable specs are complete!'));
+        killActiveProcess();
+        return { reason: 'all_specs_complete', totalIterations: totalIterationsUsed };
+      }
+
+      // Continue with the next spec
+      console.log();
+      p.log.step(chalk.magenta.bold(`Continuing to next spec: ${nextSpec.title}`));
+      selectedSpec = nextSpec;
+      continue;
+    }
+
+    // If we get here, max iterations for this spec was reached without completion
+    break;
   }
 
   // Max iterations reached
-  console.log();
-  p.log.warn(`Max iterations (${iterations}) reached`);
-  p.note(
-    'The spec is not yet complete. You can:\n' +
-      '- Run `sonata loop --local` again to continue\n' +
-      '- Run `sonata run --local` for manual control\n' +
-      '- Check progress.txt for current state',
-    'Max Iterations Reached'
-  );
-
-  // Ensure cleanup
   killActiveProcess();
-
-  p.outro(chalk.yellow(`Stopped after ${iterations} iterations`));
+  return { reason: 'max_iterations', totalIterations: totalIterationsUsed };
 }
