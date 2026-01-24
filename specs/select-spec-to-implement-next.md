@@ -4,7 +4,7 @@ title: Select spec to implement next
 status: done
 priority: high
 created: 2026-01-24T10:30:00Z
-updated: 2026-01-24T21:30:00.000Z
+updated: 2026-01-24T15:42:08.551Z
 ---
 
 ## Summary
