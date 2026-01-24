@@ -1,10 +1,10 @@
 ---
 id: select-spec-to-implement-next
 title: Select spec to implement next
-status: in-progress
+status: done
 priority: high
 created: 2026-01-24T10:30:00Z
-updated: 2026-01-24T20:15:00.000Z
+updated: 2026-01-24T21:30:00.000Z
 ---
 
 ## Summary
@@ -25,7 +25,7 @@ Enhance `sonata loop --local` to automatically continue to the next spec after c
 - [x] Initialize new session and branch for the next spec
 - [x] Add `--auto` flag to `loop` command in `index.ts`
 - [x] Update selection UI to show risk ratio and progress (e.g., `[IN PROGRESS 75%] [RISK: 40%]`)
-- [ ] Ensure iteration count persists across specs
+- [x] Ensure iteration count persists across specs
 
 ## Files
 
