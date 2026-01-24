@@ -43,6 +43,11 @@ import {
   countPrdTasks,
   clearSession,
   initSession,
+  loadLoopState,
+  initLoopState,
+  updateLoopIterations,
+  markSpecCompletedInLoop,
+  clearLoopState,
 } from '../lib/session.js';
 import {
   getSpec,
@@ -688,6 +693,18 @@ async function runLocalLoopCommand(
     }
   }
 
+  // Initialize or resume loop state (persists iteration count across specs)
+  let loopState = loadLoopState(cwd);
+  if (!loopState || loopState.maxIterations !== iterations) {
+    // Start fresh if no state or if max iterations changed
+    loopState = initLoopState(cwd, iterations);
+    p.log.info('Loop state initialized');
+  } else if (loopState.totalIterationsUsed > 0) {
+    p.log.info(
+      `Resuming loop: ${loopState.totalIterationsUsed}/${iterations} iterations used, ${loopState.specsCompleted.length} specs completed`
+    );
+  }
+
   // Run the spec loop
   // This loop iterates over specs, not iterations. It exits when:
   // - Max iterations across all specs is reached
@@ -701,6 +718,7 @@ async function runLocalLoopCommand(
     inGitRepo,
     config,
     spinner: s,
+    initialIterationsUsed: loopState.totalIterationsUsed,
   });
 
   // Handle final state
@@ -741,6 +759,7 @@ interface SpecLoopOptions {
   inGitRepo: boolean;
   config: ReturnType<typeof loadConfig>;
   spinner: ReturnType<typeof p.spinner>;
+  initialIterationsUsed: number; // Resume from this count (persisted across specs)
 }
 
 interface SpecLoopResult {
@@ -752,11 +771,11 @@ interface SpecLoopResult {
  * Run the spec loop - processes specs one at a time, continuing to next spec after completion
  */
 async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
-  const { iterations, cwd, hitl, inGitRepo, config, spinner: s } = options;
+  const { iterations, cwd, hitl, inGitRepo, config, spinner: s, initialIterationsUsed } = options;
   let selectedSpec = options.initialSpec;
 
-  // Track total iterations across all specs
-  let totalIterationsUsed = 0;
+  // Track total iterations across all specs (resume from persisted count)
+  let totalIterationsUsed = initialIterationsUsed;
 
   // Outer loop: iterate over specs
   while (totalIterationsUsed < iterations) {
@@ -817,6 +836,8 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
       const tasks = countSpecTasks(selectedSpec.content);
 
       totalIterationsUsed++;
+      // Persist iteration count immediately (survives restarts)
+      updateLoopIterations(cwd, totalIterationsUsed);
 
       console.log(chalk.cyan(`\n${'='.repeat(60)}`));
       console.log(chalk.cyan.bold(`  Iteration ${totalIterationsUsed}/${iterations} (spec: ${i})`));
@@ -887,6 +908,7 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
         p.log.info('Feedback recorded, continuing to next iteration...');
         // Don't count this as a completed iteration - decrement to retry
         totalIterationsUsed--;
+        updateLoopIterations(cwd, totalIterationsUsed);
         continue;
       }
 
@@ -898,6 +920,9 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
 
         // Update spec status to done
         updateSpecStatus(cwd, selectedSpec.id, 'done');
+
+        // Record spec completion in loop state (persists across restarts)
+        markSpecCompletedInLoop(cwd, selectedSpec.id);
 
         // Commit the spec status change
         if (inGitRepo && (await hasChanges(cwd))) {
@@ -952,8 +977,9 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
       const nextSpec = getNextSpec(cwd);
 
       if (!nextSpec) {
-        // No more specs to work on
+        // No more specs to work on - clear loop state
         p.log.success(chalk.green.bold('All actionable specs are complete!'));
+        clearLoopState(cwd);
         killActiveProcess();
         return { reason: 'all_specs_complete', totalIterations: totalIterationsUsed };
       }
@@ -972,7 +998,8 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
     break;
   }
 
-  // Max iterations reached
+  // Max iterations reached - keep loop state so user can resume with more iterations
+  // (Loop state will be cleared when they start a fresh loop or all specs complete)
   killActiveProcess();
   return { reason: 'max_iterations', totalIterations: totalIterationsUsed };
 }

@@ -3,6 +3,17 @@ import path from 'node:path';
 
 const SESSION_DIR = '.sonata';
 const SESSION_FILE = 'session.json';
+const LOOP_STATE_FILE = 'loop-state.json';
+
+/**
+ * Loop state for tracking iterations across specs in a single loop session
+ */
+export interface LoopState {
+  startedAt: string;
+  totalIterationsUsed: number;
+  maxIterations: number;
+  specsCompleted: string[]; // IDs of completed specs
+}
 
 /**
  * Session data for tracking current working ticket
@@ -212,4 +223,106 @@ export function clearSession(cwd: string): void {
  */
 export function getSessionDir(): string {
   return SESSION_DIR;
+}
+
+// ============================================
+// Loop State Management (persists across specs)
+// ============================================
+
+/**
+ * Get the loop state file path for a project
+ */
+function getLoopStatePath(cwd: string): string {
+  return path.join(cwd, SESSION_DIR, LOOP_STATE_FILE);
+}
+
+/**
+ * Load the current loop state for a project
+ * Returns null if no active loop session
+ */
+export function loadLoopState(cwd: string): LoopState | null {
+  const statePath = getLoopStatePath(cwd);
+
+  if (!fs.existsSync(statePath)) {
+    return null;
+  }
+
+  try {
+    const content = fs.readFileSync(statePath, 'utf8');
+    return JSON.parse(content) as LoopState;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Initialize a new loop state
+ */
+export function initLoopState(cwd: string, maxIterations: number): LoopState {
+  ensureSessionDir(cwd);
+
+  const state: LoopState = {
+    startedAt: new Date().toISOString(),
+    totalIterationsUsed: 0,
+    maxIterations,
+    specsCompleted: [],
+  };
+
+  const statePath = getLoopStatePath(cwd);
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
+
+  return state;
+}
+
+/**
+ * Update loop state with new iteration count
+ */
+export function updateLoopIterations(cwd: string, totalIterationsUsed: number): LoopState | null {
+  const state = loadLoopState(cwd);
+
+  if (!state) {
+    return null;
+  }
+
+  const updated: LoopState = {
+    ...state,
+    totalIterationsUsed,
+  };
+
+  const statePath = getLoopStatePath(cwd);
+  fs.writeFileSync(statePath, JSON.stringify(updated, null, 2), 'utf8');
+
+  return updated;
+}
+
+/**
+ * Mark a spec as completed in the loop state
+ */
+export function markSpecCompletedInLoop(cwd: string, specId: string): LoopState | null {
+  const state = loadLoopState(cwd);
+
+  if (!state) {
+    return null;
+  }
+
+  const updated: LoopState = {
+    ...state,
+    specsCompleted: [...state.specsCompleted, specId],
+  };
+
+  const statePath = getLoopStatePath(cwd);
+  fs.writeFileSync(statePath, JSON.stringify(updated, null, 2), 'utf8');
+
+  return updated;
+}
+
+/**
+ * Clear the loop state (loop complete or abandoned)
+ */
+export function clearLoopState(cwd: string): void {
+  const statePath = getLoopStatePath(cwd);
+
+  if (fs.existsSync(statePath)) {
+    fs.unlinkSync(statePath);
+  }
 }
