@@ -747,6 +747,7 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
       ticketUrl: selectedSpec.filepath,
       branch,
     });
+    p.log.info(`Session initialized for: ${selectedSpec.title}`);
 
     // Update spec status to in-progress if it was todo
     if (selectedSpec.status === 'todo') {
@@ -917,9 +918,12 @@ async function runSpecLoop(options: SpecLoopOptions): Promise<SpecLoopResult> {
         return { reason: 'all_specs_complete', totalIterations: totalIterationsUsed };
       }
 
-      // Continue with the next spec
+      // Continue with the next spec - a new session and branch will be initialized
+      // at the top of the while loop
       console.log();
-      p.log.step(chalk.magenta.bold(`Continuing to next spec: ${nextSpec.title}`));
+      console.log(chalk.magenta(`\n${'─'.repeat(60)}`));
+      p.log.step(chalk.magenta.bold(`Auto-selecting next spec: ${nextSpec.title}`));
+      console.log(chalk.magenta(`${'─'.repeat(60)}\n`));
       selectedSpec = nextSpec;
       continue;
     }
