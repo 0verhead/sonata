@@ -107,6 +107,10 @@ npm unlink -g sonata
 - [GitHub CLI](https://cli.github.com) (for creating PRs)
 - Node.js 18+
 
+### Running on a VPS
+
+Want to run `sonata loop` autonomously on a server? See the [VPS Setup Guide](docs/vps-setup.md) for complete instructions on setting up deploy keys, authentication, and tmux sessions.
+
 ## Quick Start
 
 ### With Notion (recommended)
