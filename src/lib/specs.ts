@@ -449,3 +449,71 @@ export function getSpecProgress(spec: Spec): number {
 
   return Math.round((completed / total) * 100);
 }
+
+/**
+ * Get the next spec to work on based on ranking algorithm
+ *
+ * Ranking priority (in order):
+ * 1. In-progress specs first (status === 'in-progress')
+ * 2. Higher risk ratio (more high-risk uncompleted tasks)
+ * 3. Higher priority metadata (high > medium > low)
+ * 4. Higher progress percentage (closer to completion)
+ * 5. Older created date (first-come-first-served)
+ *
+ * Only considers specs with status 'todo' or 'in-progress'.
+ * Returns null if no actionable specs are found.
+ *
+ * @param cwd - The current working directory
+ * @returns The highest-ranked spec, or null if none available
+ */
+export function getNextSpec(cwd: string): Spec | null {
+  const allSpecs = listSpecs(cwd);
+
+  // Filter to only actionable specs (todo or in-progress)
+  const actionableSpecs = allSpecs.filter(
+    (spec) => spec.status === 'todo' || spec.status === 'in-progress'
+  );
+
+  if (actionableSpecs.length === 0) {
+    return null;
+  }
+
+  // Priority value mapping (lower is better for sorting)
+  const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  // Sort specs by ranking criteria
+  const rankedSpecs = actionableSpecs.toSorted((a, b) => {
+    // 1. In-progress specs first
+    const aInProgress = a.status === 'in-progress' ? 0 : 1;
+    const bInProgress = b.status === 'in-progress' ? 0 : 1;
+    if (aInProgress !== bInProgress) {
+      return aInProgress - bInProgress;
+    }
+
+    // 2. Higher risk ratio first (descending)
+    const aRiskRatio = getSpecRiskRatio(a);
+    const bRiskRatio = getSpecRiskRatio(b);
+    if (aRiskRatio !== bRiskRatio) {
+      return bRiskRatio - aRiskRatio; // Higher risk first
+    }
+
+    // 3. Higher priority metadata (high > medium > low)
+    const aPriority = a.priority ? priorityOrder[a.priority] : 999;
+    const bPriority = b.priority ? priorityOrder[b.priority] : 999;
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+
+    // 4. Higher progress percentage first (descending - closer to completion)
+    const aProgress = getSpecProgress(a);
+    const bProgress = getSpecProgress(b);
+    if (aProgress !== bProgress) {
+      return bProgress - aProgress; // Higher progress first
+    }
+
+    // 5. Older created date first (ascending)
+    return new Date(a.created).getTime() - new Date(b.created).getTime();
+  });
+
+  return rankedSpecs[0];
+}
