@@ -432,3 +432,20 @@ export function getSpecRiskRatio(spec: Spec): number {
 
   return highRiskCount / uncompletedTasks.length;
 }
+
+/**
+ * Calculate the completion progress for a spec
+ *
+ * @param spec - The spec to analyze
+ * @returns A number between 0 and 100 representing the percentage of completed tasks
+ *          Returns 100 if there are no tasks (spec is considered complete)
+ */
+export function getSpecProgress(spec: Spec): number {
+  const { total, completed } = countSpecTasks(spec.content);
+
+  if (total === 0) {
+    return 100;
+  }
+
+  return Math.round((completed / total) * 100);
+}
