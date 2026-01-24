@@ -390,3 +390,45 @@ export function classifyTask(taskText: string): TaskRiskLevel {
 
   return 'normal';
 }
+
+/**
+ * Extract uncompleted tasks from spec content
+ *
+ * @param content - The markdown content of a spec
+ * @returns Array of task text strings for uncompleted tasks
+ */
+export function getUncompletedTasks(content: string): string[] {
+  // Match lines that start with "- [ ]" (uncompleted checkbox)
+  const taskPattern = /^- \[ \] (.+)$/gm;
+  const tasks: string[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = taskPattern.exec(content)) !== null) {
+    tasks.push(match[1]);
+  }
+
+  return tasks;
+}
+
+/**
+ * Calculate the risk ratio for a spec based on its uncompleted tasks
+ *
+ * The risk ratio is the proportion of uncompleted tasks that are classified
+ * as high-risk (architectural, integration, unknown, etc.). This is used to
+ * prioritize specs that have more risky work remaining ("fail fast").
+ *
+ * @param spec - The spec to analyze
+ * @returns A number between 0 and 1 representing the ratio of high-risk tasks
+ *          Returns 0 if there are no uncompleted tasks
+ */
+export function getSpecRiskRatio(spec: Spec): number {
+  const uncompletedTasks = getUncompletedTasks(spec.content);
+
+  if (uncompletedTasks.length === 0) {
+    return 0;
+  }
+
+  const highRiskCount = uncompletedTasks.filter((task) => classifyTask(task) === 'high').length;
+
+  return highRiskCount / uncompletedTasks.length;
+}
