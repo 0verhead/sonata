@@ -11,6 +11,7 @@ import {
   stageAll,
   commit,
   hasChanges,
+  switchBranch,
 } from '../lib/git.js';
 import { resolveMode, ModeResolutionError } from '../lib/mode.js';
 import {
@@ -508,6 +509,8 @@ export async function loopCommand(options: LoopOptions = {}): Promise<void> {
             cwd
           );
           s.stop(`PR created: ${prUrl}`);
+          await switchBranch(config.git.baseBranch, cwd);
+          p.log.info(`Switched back to ${config.git.baseBranch}`);
         } catch (error) {
           s.stop('Failed to create PR');
           p.log.warn(`Could not create PR: ${error}`);
@@ -784,6 +787,8 @@ async function runLocalLoopCommand(options: LoopOptions & { iterations: number }
             cwd
           );
           s.stop(`PR created: ${prUrl}`);
+          await switchBranch(config.git.baseBranch, cwd);
+          p.log.info(`Switched back to ${config.git.baseBranch}`);
         } catch (error) {
           s.stop('Failed to create PR');
           p.log.warn(`Could not create PR: ${error}`);
