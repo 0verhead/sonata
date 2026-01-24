@@ -4,7 +4,7 @@ title: Select spec to implement next
 status: in-progress
 priority: high
 created: 2026-01-24T10:30:00Z
-updated: 2026-01-24T16:00:00.000Z
+updated: 2026-01-24T16:30:00.000Z
 ---
 
 ## Summary
@@ -17,7 +17,7 @@ Enhance `sonata loop --local` to automatically continue to the next spec after c
   - High-risk: `architecture`, `schema`, `design`, `integration`, `API`, `contract`, `spike`, `unknown`, `core`, `abstraction`, `foundation`, `refactor`
   - Low-risk: `polish`, `fix`, `cleanup`, `style`, `typo`, `docs`, `UI`, `button`, `tweak`
 - [x] Add `classifyTask(taskText: string): 'high' | 'low' | 'normal'` function in `specs.ts`
-- [ ] Add `getSpecRiskRatio(spec: Spec): number` that returns ratio of high-risk uncompleted tasks (0.0-1.0)
+- [x] Add `getSpecRiskRatio(spec: Spec): number` that returns ratio of high-risk uncompleted tasks (0.0-1.0)
 - [ ] Add `getSpecProgress(spec: Spec): number` that returns completion % (0-100)
 - [ ] Add `getNextSpec(cwd: string): Spec | null` that returns highest-ranked spec using the full algorithm
 - [ ] Implement ranking: in-progress first -> risk ratio (desc) -> priority metadata -> progress % (desc) -> created date (asc)
